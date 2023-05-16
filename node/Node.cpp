@@ -1,15 +1,23 @@
 #include "Node.h"
 
-Node::Node(int nodeId, int xPos, int yPos, int zPos, double power) : id(nodeId), x(xPos), y(yPos), z(zPos), signalPower(power) {}
+Node::Node(int nodeId, int xPos, int yPos, int zPos, double power) : id(nodeId), x(xPos), y(yPos), z(zPos), signalPower(power) {
+    RoutingTableEntry entry = {id, id, 0.0, 0};
+    routingTable[id] = entry;
+}
 
 void Node::receiveRoutingTable(const std::unordered_map<int, RoutingTableEntry>& receivedTable, int neighborId) {
     neighborTables[neighborId] = receivedTable;
     updateRoutingTable();
 }
 
+// This method sends routing table information to other nodes in range to update the other nodes.
+void Node::broadcast() {
+
+}
+
 void Node::updateRoutingTable() {
     std::unordered_map<int, RoutingTableEntry> newRoutingTable;
-
+    std::cout << "Hello" << std::endl;
     for (const auto& neighbor : neighborTables) {
         for (const auto& entry : neighbor.second) {
             int destination = entry.first;
@@ -33,6 +41,11 @@ void Node::updateRoutingTable() {
 
 void Node::sendRoutingTable(Node& neighbor) {
     neighbor.receiveRoutingTable(routingTable, id);
+}
+
+void Node::exchangeRoutingTableWith(Node& other) {
+    sendRoutingTable(other);
+    other.sendRoutingTable(*this);
 }
 
 double Node::calculateSignalStrength(int destX, int destY, int destZ) {

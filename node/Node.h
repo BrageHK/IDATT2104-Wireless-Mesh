@@ -35,6 +35,10 @@ public:
     double calculateSignalStrength(int destX, int destY, int destZ);
 
     void printRoutingTable() const;
+
+    void exchangeRoutingTableWith(Node &other);
+
+    void broadcast();
 };
 
 #endif // NODE_H

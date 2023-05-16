@@ -10,13 +10,13 @@
 using namespace std;
 
 int main() {
-    Node node1(1, 0, 0, 0, 5);
-    Node node2(2, 0, 0, 2, 20);
+    Node node1(1, 0, 0, 0, 20);
+    Node node2(2, 2, 2, 2, 20);
 
-    mutex mutex_wait;
+    //mutex mutex_wait;
 
-    node2.sendRoutingTable(node1);
-    node1.sendRoutingTable(node2);
+    node2.exchangeRoutingTableWith(node1);
+    node1.exchangeRoutingTableWith(node2);
 
     /*
     Workers worker_threads(4);
