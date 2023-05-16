@@ -58,6 +58,9 @@ double Node::calculateSignalStrength(int destX, int destY, int destZ) {
     if (signalStrength < 0.1) {
         return -1.0; // Return -1 indicating a weak signal
     }
+    if(signalStrength > signalPower) {
+        return signalPower;
+    }
 
     return signalStrength;
 }
