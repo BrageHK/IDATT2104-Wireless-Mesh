@@ -9,14 +9,41 @@
 
 using namespace std;
 
+void update(std::vector<Node*>& nodes) {
+    for (auto& node : nodes) {
+        node->updateAllNodes(nodes);
+    }
+}
+
 int main() {
-    Node node1(1, 0, 0, 0, 20);
-    Node node2(2, 2, 2, 2, 20);
+    std::vector<Node> nodes;
+    for(int i = 0; i < 10; i++) {
+        nodes.emplace_back(i, i, i, i, 20);
+    }
 
-    //mutex mutex_wait;
+    // Update all nodes with the full list of nodes
+    // As the is just a simulation, the easiest way for nodes to know they are in range is to have every
+    // node position in every node
 
-    node2.exchangeRoutingTableWith(node1);
-    node1.exchangeRoutingTableWith(node2);
+
+    std::vector<Node*> nodePointers;
+    for(Node& node : nodes) {
+        nodePointers.push_back(&node);
+    }
+    update(nodePointers);
+
+    // Exchange routing tables between all pairs of nodes
+    for(Node& node : nodes) {
+        node.updateAllNodes(nodePointers);
+        node.broadcast();
+    }
+
+    // Print out routing tables for each node
+    for (const auto& node : nodes) {
+        node.printRoutingTable();
+        node.printNeighborTables();
+    }
+
 
     /*
     Workers worker_threads(4);

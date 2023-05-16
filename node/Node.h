@@ -22,6 +22,7 @@ private:
     double signalPower;
     std::unordered_map<int, RoutingTableEntry> routingTable;
     std::unordered_map<int, std::unordered_map<int, RoutingTableEntry>> neighborTables;
+    std::vector<Node*> allNodes;
 
 public:
     Node(int nodeId, int xPos, int yPos, int zPos, double power);
@@ -39,6 +40,14 @@ public:
     void exchangeRoutingTableWith(Node &other);
 
     void broadcast();
+
+    std::vector<Node *> getNodesInRadius();
+
+    void updateAllNodes(std::vector<Node*> &allNodes);
+
+    void AddRoute(RoutingTableEntry &entry, int id);
+
+    void printNeighborTables() const;
 };
 
 #endif // NODE_H
