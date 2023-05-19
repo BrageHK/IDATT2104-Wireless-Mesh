@@ -2,7 +2,7 @@
 #define NODE_H
 
 #include <iostream>
-#include <unordered_map>
+#include <map>
 #include <queue>
 #include <cmath>
 
@@ -15,21 +15,20 @@ struct RoutingTableEntry {
 
 class Node {
 private:
+    //TODO: unit_32
     int id;
     int x;
     int y;
     int z;
     double signalPower;
-    std::unordered_map<int, RoutingTableEntry> routingTable;
-    std::unordered_map<int, std::unordered_map<int, RoutingTableEntry>> neighborTables;
+    const double MIN_SIGNAL_STRENGTH = 0.02;
+    std::map<int, RoutingTableEntry> routingTable;
     std::vector<Node*> allNodes;
 
 public:
     Node(int nodeId, int xPos, int yPos, int zPos, double power);
 
-    void receiveRoutingTable(const std::unordered_map<int, RoutingTableEntry>& receivedTable, int neighborId);
-
-    void updateRoutingTable();
+    void receiveRoutingTable(const std::map<int, RoutingTableEntry>& receivedTable, int neighborId);
 
     void sendRoutingTable(Node& neighbor);
 
@@ -41,13 +40,15 @@ public:
 
     void broadcast();
 
-    std::vector<Node *> getNodesInRadius();
+    std::map<int, Node *> getNodesInRadius();
 
     void updateAllNodes(std::vector<Node*> &allNodes);
 
     void AddRoute(RoutingTableEntry &entry, int id);
 
     void printNeighborTables() const;
+
+    void updateRoutingTable(const std::map<int, RoutingTableEntry> &receivedTable, int neighborId);
 };
 
 #endif // NODE_H

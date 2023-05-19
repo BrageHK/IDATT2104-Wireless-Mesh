@@ -38,10 +38,12 @@ int main() {
         node.broadcast();
     }
 
+    for(Node& node : nodes) {
+        node.broadcast();
+    }
     // Print out routing tables for each node
     for (const auto& node : nodes) {
         node.printRoutingTable();
-        node.printNeighborTables();
     }
 
 
