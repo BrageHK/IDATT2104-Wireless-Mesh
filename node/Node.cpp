@@ -27,9 +27,6 @@ std::map<int, Node*> Node::getNodesInRadius() {
         if (this->id != otherNode->id) { // Skip the node itself
             double signalStrength = calculateSignalStrength(otherNode->x, otherNode->y, otherNode->z);
             if (signalStrength >= MIN_SIGNAL_STRENGTH) {
-                /*if(this->routingTable[id].sequenceNumber & 1) {
-                    this->routingTable[id].sequenceNumber++;
-                }*/
                 nodesInRadius[otherNode->id] = otherNode;
                 noNodesInRange = false;
             }
@@ -37,8 +34,6 @@ std::map<int, Node*> Node::getNodesInRadius() {
     }
     if(noNodesInRange) {
         std::cout << "No nodes in range of node " << this->id << std::endl;
-        /*if(this->routingTable[id].sequenceNumber & 0)
-            this->routingTable[id].sequenceNumber++;*/
     }
 
     std::cout << "number of nodes in range: " << nodesInRadius.size() << std::endl;
@@ -79,7 +74,6 @@ void Node::updateRoutingTable(const std::map<int, RoutingTableEntry>& receivedTa
     for (const auto& entry : receivedTable) {
         int destination = entry.first;
         const RoutingTableEntry& neighborEntry = entry.second;
-
 
         // don't update your own node
         if(destination == this->id) {
