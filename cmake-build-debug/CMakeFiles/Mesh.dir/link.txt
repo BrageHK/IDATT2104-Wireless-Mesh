@@ -1,0 +1,3 @@
+C:\Users\eiler\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\231.8770.66\bin\cmake\win\x64\bin\cmake.exe -E rm -f CMakeFiles\Mesh.dir/objects.a
+C:\Users\eiler\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\231.8770.66\bin\mingw\bin\ar.exe qc CMakeFiles\Mesh.dir/objects.a @CMakeFiles\Mesh.dir\objects1
+C:\Users\eiler\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\231.8770.66\bin\mingw\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\Mesh.dir/objects.a -Wl,--no-whole-archive -o Mesh.exe -Wl,--out-implib,libMesh.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\Mesh.dir\linkLibs.rsp

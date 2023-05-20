@@ -119,3 +119,19 @@ void Node::printRoutingTable() const {
 void Node::updateAllNodes(std::vector<Node*> &allNodes) {
     this->allNodes = allNodes;
 }
+
+double Node::getSignalPower() {
+    return signalPower;
+}
+
+int Node::getZ() {
+    return z;
+}
+
+int Node::getY() {
+    return y;
+}
+
+int Node::getX() {
+    return x;
+}

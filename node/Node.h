@@ -25,6 +25,14 @@ private:
 public:
     Node(int nodeId, int xPos, int yPos, int zPos, double power);
 
+    int getX();
+
+    int getY();
+
+    int getZ();
+
+    double getSignalPower();
+
     void sendRoutingTable(Node& neighbor);
 
     double calculateSignalStrength(int destX, int destY, int destZ);

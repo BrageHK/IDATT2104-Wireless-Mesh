@@ -5,6 +5,7 @@
 #include <random>
 #include "node/Node.h"
 #include "worker/Workers.h"
+#include "topography/Topography.h"
 
 using namespace std;
 
@@ -124,10 +125,10 @@ void startSimulationConsole() {
             printSimulationPreset(1, 50, 300, "Random");
             printSimulationPreset(2, 100, 100, "Random");
             printSimulationPreset(3, 200, 20, "Random");
-        
+
             int simulation;
             cin >> simulation;
-        
+
             switch (simulation) {
                 case 0:
                     cout << "Running simulation 0" << endl;
@@ -204,63 +205,48 @@ int main() {
 
     worker_threads.post([] {
         // wait 3 seconds
-        this_thread::sleep_for(chrono::seconds(3));
+        //this_thread::sleep_for(chrono::seconds(3));
         cout << "last " << this_thread::get_id() << endl;
-    });
-    worker_threads.post([] {
-        cout << "eHello  " << this_thread::get_id() << endl;
-    });
-    worker_threads.post([] {
-        cout << "Hello  " << this_thread::get_id() << endl;
-    });
-    worker_threads.post([] {
-        cout << "Hello  " << this_thread::get_id() << endl;
-    });
-    worker_threads.post([] {
-        cout << "Hello fr" << this_thread::get_id() << endl;
-    });
-    worker_threads.post([] {
-        cout << "first? " << this_thread::get_id() << endl;
     });
 
     worker_threads.stop();
     startSimulationConsole();
     cout << "Exiting program." << endl;
 
-    /*int numberOfNodes = 10;
-    int numberOfBroadcasts = 10;
+    Topography geoTest;
 
-    // Create and init 10 nodes
 
-    for(int i = 0; i < numberOfNodes; i++) {
-        nodes.emplace_back(i, i, i, i, 20);
-    }
+    std::vector<std::vector<int>> heightData = geoTest.readElevationData("output.txt");
 
-    for(int i = numberOfNodes; i < numberOfNodes*2; i++) {
-        nodes.emplace_back(i, i, i, i, 0);
-    }
+    cout << "Hello World!" << endl;
 
-    // Update all nodes with the full list of nodes
-    // As the is just a simulation, the easiest way for nodes to know they are in range is to have every
-    // node position in every node.
-    // Each node has access to every other node, but this is just used for getting the position of the other nodes.
 
-    for(Node& node : nodes) {
-        nodePointers.push_back(&node);
-    }
-    updateNodePointers(nodePointers);
+    Node node1(1, 50, 50, 5, 10.0);
+    Node node2(2, 150, 150, 10, 20.0);
+    Node node3(3, 321, 250, 15, 100.0);
+    Node node4(4, 213, 350, 20, 40.0);
+    Node node5(5, 213, 450, 25, 100.0);
 
-    // Exchange routing tables between all pairs of nodes
-    for(Node& node : nodes) {
-        node.updateAllNodes(nodePointers);
-    }
+    // Add pointer of  them to a vector
+    std::vector<Node*> nodes = {&node1, &node2, &node3, &node4, &node5};
 
-    broadcastNodes(nodePointers, numberOfBroadcasts);
+    cout << "Hello World!" << endl;
 
-    // Print out routing tables for each node
-    for (const auto& node : nodes) {
-        node.printRoutingTable();
-    }*/
+    // Connect some of them together
+    std::vector<std::pair<Node*, Node*>> connectedDrones = {
+            {&node1, &node2},
+            {&node2, &node5},
+            {&node3, &node4},
+            {&node4, &node1},
+            {&node5, &node1},
+    };
+
+    cout << "Hello World!" << endl;
+
+    std::string filename = "output.bmp";
+
+    // Call the writeMapToBMP function with these test data
+    geoTest.writeMapToBMP(heightData, nodes, connectedDrones, filename);
 
     return 0;
 }
