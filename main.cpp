@@ -35,7 +35,6 @@ int main() {
     // Exchange routing tables between all pairs of nodes
     for(Node& node : nodes) {
         node.updateAllNodes(nodePointers);
-        node.broadcast();
     }
 
     for(Node& node : nodes) {

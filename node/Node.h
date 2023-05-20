@@ -5,13 +5,10 @@
 #include <map>
 #include <queue>
 #include <cmath>
+#include <map>
+#include <tuple>
 
-struct RoutingTableEntry {
-    int destination;
-    int nextHop;
-    double signalStrength;
-    int sequenceNumber;
-};
+using RoutingTable = std::map<int, std::tuple<int, double, int>>;
 
 class Node {
 private:
@@ -22,13 +19,11 @@ private:
     int z;
     double signalPower;
     const double MIN_SIGNAL_STRENGTH = 0.02;
-    std::map<int, RoutingTableEntry> routingTable;
+    RoutingTable routingTable;
     std::vector<Node*> allNodes;
 
 public:
     Node(int nodeId, int xPos, int yPos, int zPos, double power);
-
-    void receiveRoutingTable(const std::map<int, RoutingTableEntry>& receivedTable, int neighborId);
 
     void sendRoutingTable(Node& neighbor);
 
@@ -36,19 +31,19 @@ public:
 
     void printRoutingTable() const;
 
-    void exchangeRoutingTableWith(Node &other);
-
     void broadcast();
 
     std::vector<Node *> getNodesInRadius();
 
     void updateAllNodes(std::vector<Node*> &allNodes);
 
-    void AddRoute(RoutingTableEntry &entry, int id);
+    void receiveRoutingTable(RoutingTable& receivedTable, int neighborId);
 
-    void printNeighborTables() const;
+    void updateOwnTableFromAllInRange();
 
-    void updateRoutingTable(const std::map<int, RoutingTableEntry> &receivedTable, int neighborId);
+    void updateRoutingTable(const RoutingTable &tableB, int neighborId);
+
+    double calculateSignalStrength(Node *node);
 };
 
 #endif // NODE_H
