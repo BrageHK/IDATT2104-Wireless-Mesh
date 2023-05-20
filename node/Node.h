@@ -40,7 +40,7 @@ public:
 
     void broadcast();
 
-    std::map<int, Node *> getNodesInRadius();
+    std::vector<Node *> getNodesInRadius();
 
     void updateAllNodes(std::vector<Node*> &allNodes);
 

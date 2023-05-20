@@ -11,29 +11,35 @@ void Node::receiveRoutingTable(const std::map<int, RoutingTableEntry>& receivedT
 // This method sends routing table information to other nodes in range to update the other nodes.
 void Node::broadcast() {
     this->routingTable[id].sequenceNumber += 2;
-    for(auto& node : getNodesInRadius()) {
-        if(node.first != this->id) {  // Do not send to self
-            sendRoutingTable(*node.second);
+    for(Node* node : getNodesInRadius()) {
+        if(node->id != this->id) {  // Do not send to self
+            sendRoutingTable(*node);
         }
     }
 }
 
 
-std::map<int, Node*> Node::getNodesInRadius() {
-    std::map<int, Node*> nodesInRadius;
+std::vector<Node*> Node::getNodesInRadius() {
+    std::vector<Node*> nodesInRadius;
     bool noNodesInRange = true;
+
 
     for (Node* otherNode : allNodes) {
         if (this->id != otherNode->id) { // Skip the node itself
             double signalStrength = calculateSignalStrength(otherNode->x, otherNode->y, otherNode->z);
             if (signalStrength >= MIN_SIGNAL_STRENGTH) {
-                nodesInRadius[otherNode->id] = otherNode;
+                /*if(this->routingTable[id].sequenceNumber & 1) {
+                    this->routingTable[id].sequenceNumber++;
+                }*/
+                nodesInRadius.push_back(otherNode);
                 noNodesInRange = false;
             }
         }
     }
     if(noNodesInRange) {
         std::cout << "No nodes in range of node " << this->id << std::endl;
+        /*if(this->routingTable[id].sequenceNumber & 0)
+            this->routingTable[id].sequenceNumber++;*/
     }
 
     std::cout << "number of nodes in range: " << nodesInRadius.size() << std::endl;
@@ -66,59 +72,94 @@ void Node::updateRoutingTable(const std::map<int, RoutingTableEntry>& receivedTa
     //broadcast();
     //printRoutingTable();
 }*/
-void Node::updateRoutingTable(const std::map<int, RoutingTableEntry>& receivedTable, int neighborId) {
+/*void Node::updateRoutingTable(const std::map<int, RoutingTableEntry>& receivedTable, int neighborId) {
     std::map<int, RoutingTableEntry> newRoutingTable = routingTable;
 
-    std::map<int, Node*> nodesInRadius = getNodesInRadius();
+    std::vector<Node*> nodesInRadius = getNodesInRadius();
 
     for (const auto& entry : receivedTable) {
         int destination = entry.first;
         const RoutingTableEntry& neighborEntry = entry.second;
-
         // don't update your own node
         if(destination == this->id) {
             continue;
         }
 
-        // if this node is within range of the node to check from the neighbor table, check if there is a stronger signal from this node to the node to check
-        if(nodesInRadius[destination]) { // if the node is in range
-            Node* nodeToCheck = allNodes[destination]; // Checking the neighbor node
-            double signalStrengthToNeighbor = calculateSignalStrength(nodeToCheck->x, nodeToCheck->y, nodeToCheck->z);
-            if(signalStrengthToNeighbor < MIN_SIGNAL_STRENGTH) {
-                exit(69);
-            }
-            if (newRoutingTable.count(destination) == 0) {// Node is in radius but not in routing table
-                newRoutingTable[destination] = neighborEntry;
-                newRoutingTable[destination].nextHop = neighborId;
+        if(neighborEntry.sequenceNumber < newRoutingTable[destination].sequenceNumber) {
+            continue;
+        }
+
+        if(neighborEntry.sequenceNumber == newRoutingTable[destination].sequenceNumber && neighborEntry.signalStrength < newRoutingTable[destination].signalStrength) {
+            continue;
+        }
+
+        Node* nodeToCheck = allNodes[destination]; // Checking the neighbor node
+        double signalStrengthToNeighbor = calculateSignalStrength(nodeToCheck->x, nodeToCheck->y, nodeToCheck->z);
+
+        //if(signalStrengthToNeighbor > newRoutingTable[destination].signalStrength)
+
+        if (newRoutingTable.count(destination) == 0 && signalStrengthToNeighbor > MIN_SIGNAL_STRENGTH) {// Node is in radius but not in routing table
+            newRoutingTable[destination] = neighborEntry;
+            newRoutingTable[destination].nextHop = neighborId;
+            if(signalStrengthToNeighbor > MIN_SIGNAL_STRENGTH)
                 newRoutingTable[destination].signalStrength = signalStrengthToNeighbor;
-            } else { // Node is in radius and in routing table
-                if (signalStrengthToNeighbor > newRoutingTable[destination].signalStrength) {// if the signal strength is better than the current signal strength in the routing table update the routing table
-                    newRoutingTable[destination] = neighborEntry;
-                    newRoutingTable[destination].nextHop = destination;
-                    newRoutingTable[destination].signalStrength = signalStrengthToNeighbor;
-                    newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
-                }
-                if(signalStrengthToNeighbor == newRoutingTable[destination].signalStrength && neighborEntry.sequenceNumber > newRoutingTable[destination].sequenceNumber) {
-                    newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
-                }
-            }
-        } else { // if the destination node is not in range of this node
-            if(neighborEntry.sequenceNumber < newRoutingTable[destination].sequenceNumber)
-                continue;
-            if (newRoutingTable.count(destination) == 0) { // if the node is not in the routing table
-                newRoutingTable[destination] = neighborEntry;
+        } else if(signalStrengthToNeighbor < neighborEntry.signalStrength && neighborEntry.signalStrength != signalPower) {
+            newRoutingTable[destination] = neighborEntry;
+            newRoutingTable[destination].nextHop = neighborId;
+        } else if(signalStrengthToNeighbor < newRoutingTable[destination].signalStrength && neighborEntry.sequenceNumber > newRoutingTable[destination].sequenceNumber) {
+            newRoutingTable[destination] = neighborEntry;
+            newRoutingTable[destination].nextHop = neighborId;
+        } else if(signalStrengthToNeighbor == newRoutingTable[destination].signalStrength && neighborEntry.sequenceNumber > newRoutingTable[destination].sequenceNumber) {
+            newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
+        } else if (signalStrengthToNeighbor > newRoutingTable[destination].signalStrength) {// if the signal strength is better than the current signal strength in the routing table update the routing table
+            newRoutingTable[destination] = neighborEntry;
+            newRoutingTable[destination].nextHop = destination;
+            newRoutingTable[destination].signalStrength = signalStrengthToNeighbor;
+            newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
+        }
+    }
+
+    routingTable = newRoutingTable;
+    //broadcast();
+    //printRoutingTable();
+}*/
+void Node::updateRoutingTable(const std::map<int, RoutingTableEntry>& receivedTable, int neighborId) {
+    std::map<int, RoutingTableEntry> newRoutingTable = routingTable;
+    std::vector<Node*> nodesInRadius = getNodesInRadius();
+
+    for (const auto& entry : receivedTable) {
+        int destination = entry.first;
+        const RoutingTableEntry& neighborEntry = entry.second;
+
+        if(destination == this->id || neighborEntry.sequenceNumber < newRoutingTable[destination].sequenceNumber
+           || (neighborEntry.sequenceNumber == newRoutingTable[destination].sequenceNumber && neighborEntry.signalStrength < newRoutingTable[destination].signalStrength)) {
+            continue;
+        }
+
+        Node* nodeToCheck = allNodes[destination]; // Checking the neighbor node
+        double signalStrengthToNeighbor = calculateSignalStrength(nodeToCheck->x, nodeToCheck->y, nodeToCheck->z);
+
+        // Only update routing table if there's a stronger signal or it's a new, strong enough node
+        if ((newRoutingTable.count(destination) == 0 && signalStrengthToNeighbor > MIN_SIGNAL_STRENGTH)
+            || (signalStrengthToNeighbor < neighborEntry.signalStrength && neighborEntry.signalStrength != signalPower)
+            || (signalStrengthToNeighbor <= newRoutingTable[destination].signalStrength && neighborEntry.sequenceNumber > newRoutingTable[destination].sequenceNumber)
+            || (signalStrengthToNeighbor > newRoutingTable[destination].signalStrength)) {
+
+            newRoutingTable[destination] = neighborEntry;
+
+
+            if(signalStrengthToNeighbor > MIN_SIGNAL_STRENGTH) {
+                newRoutingTable[destination].signalStrength = signalStrengthToNeighbor;
                 newRoutingTable[destination].nextHop = neighborId;
+            } else {
                 newRoutingTable[destination].signalStrength = neighborEntry.signalStrength;
-            } else { // if the node is in the routing table
-                if (newRoutingTable[destination].signalStrength > neighborEntry.signalStrength) { // if the signal strength is better than the current signal strength in the routing table update the routing table
-                    newRoutingTable[destination] = neighborEntry;
-                    newRoutingTable[destination].nextHop = destination;
-                    newRoutingTable[destination].signalStrength = neighborEntry.signalStrength;
-                    newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
-                }
-                if(neighborEntry.signalStrength == newRoutingTable[destination].signalStrength && neighborEntry.sequenceNumber > newRoutingTable[destination].sequenceNumber) {
-                    newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
-                }
+                newRoutingTable[destination].nextHop = neighborId;
+            }
+
+
+            // Only update the sequence number if it's a stronger or equivalent signal
+            if (signalStrengthToNeighbor >= newRoutingTable[destination].signalStrength) {
+                newRoutingTable[destination].sequenceNumber = neighborEntry.sequenceNumber;
             }
         }
     }
@@ -144,7 +185,7 @@ double Node::calculateSignalStrength(int destX, int destY, int destZ) {
     if(distance == 0) return signalPower;
     double signalStrength = signalPower / (4.0 * M_PI * distance * distance);
 
-    std::cout << "Signal strength from Node " << id << " to (" << destX << ", " << destY << ", " << destZ << ") is " << signalStrength << std::endl;
+    //std::cout << "Signal strength from Node " << id << " to (" << destX << ", " << destY << ", " << destZ << ") is " << signalStrength << std::endl;
 
     // Check if the signal strength is too low
     if (signalStrength < MIN_SIGNAL_STRENGTH) {
