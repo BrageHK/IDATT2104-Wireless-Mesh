@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "Mesh::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Mesh-Debug-20c5fe82e68aaa0aef3b.json",
+					"jsonFile" : "target-Mesh-Debug-3be055b5c8b74db9f18a.json",
 					"name" : "Mesh",
 					"projectIndex" : 0
 				}
@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "C:/Users/brage/Documents/skole/IDATT2104-Wireless-Mesh/cmake-build-debug",
-		"source" : "C:/Users/brage/Documents/skole/IDATT2104-Wireless-Mesh"
+		"build" : "D:/kode/wirelesh mesh/IDATT2104-Wireless-Mesh/cmake-build-debug",
+		"source" : "D:/kode/wirelesh mesh/IDATT2104-Wireless-Mesh"
 	},
 	"version" : 
 	{
