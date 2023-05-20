@@ -38,10 +38,9 @@ std::vector<Node*> Node::getNodesInRadius() {
         }
     }
     if(noNodesInRange) {
-        std::cout << "No nodes in range of node " << this->id << std::endl;
+        // something
     }
 
-    std::cout << "number of nodes in range: " << nodesInRadius.size() << std::endl;
     return nodesInRadius;
 }
 
@@ -108,7 +107,7 @@ double Node::calculateSignalStrength(int destX, int destY, int destZ) {
 void Node::printRoutingTable() const {
     std::cout << "Routing Table for Node " << id << ":" << std::endl;
     for (const auto& entry : routingTable) {
-        std::cout << ", Destination: " << entry.first;
+        std::cout << "Destination: " << entry.first;
         std::cout << ", Next Hop: " << std::get<0>(entry.second);
         std::cout << ", Number of hops: " << std::get<1>(entry.second);
         std::cout << ", Sequence Number: " << std::get<2>(entry.second) << std::endl;

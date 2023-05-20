@@ -11,6 +11,7 @@ using namespace std;
 
 vector<Node> nodes;
 vector<Node*> nodePointers;
+bool stop = false;
 
 // This method makes sure that every node has a pointer to every other node. This is used for keeping track of the
 // position of the nodes in the network. This way, the program can simulate the position of nodes. As every node
@@ -32,10 +33,15 @@ void broadcastNodes(vector<Node*>& nodes, int numberOfBroadcasts) {
     }
 }
 
-void printRoutingTables(vector<Node*>& nodes) {
+void printRoutingTables() {
     for (auto& node : nodes) {
-        node->printRoutingTable();
+        node.printRoutingTable();
     }
+}
+
+void generateImage() {
+    Topography topography;//TODO: fix this
+    //topography.generateImage(nodes);
 }
 
 void changeNodePosition(int nodeId, int x, int y, int z) {
@@ -46,16 +52,48 @@ void changeNodePosition(int nodeId, int x, int y, int z) {
     }
 }
 
+// Every node broadcasts its routing table every 15 seconds.
+void regularBroadcasting() {
+    while(!stop) {
+        broadcastNodes(nodePointers, 1);
+        // Sleep for 15 seconds
+        this_thread::sleep_for(chrono::seconds(15));
+    }
+}
+
 void startCLI() {
     string command;
-    cout << "Enter a command: " << endl;
-    while(true) {
+    cout << "Use the \"help\" command if you are stuck\nEnter a command: " << endl;
+    while(!stop) {
+        cout << ">>";
         cin >> command;
         // Run your command
         if (command == "quit") {
+            stop = true;
             break;
         }
         // Add more commands as per your requirement
+        if(command == "help") {
+            cout << "Commands: " << endl;
+            cout << "quit: quit the program" << endl;
+            cout << "print: print the routing tables of all nodes" << endl;
+            cout << "generate: generate an image of the wireless mesh network with buildings" << endl;
+            cout << "change: change the position of a node" << endl;
+            cout << "create: create a new node" << endl;
+            cout << "delete: delete a node" << endl;
+            cout << "help: print this help message" << endl;
+        } else if(command == "print") {
+            printRoutingTables();
+        } else if(command == "change") {
+            int nodeId, x, y, z;
+            cout << "Number of nodes in network is: " << nodes.size() << "\nEnter node id: \n>>";
+            cin >> nodeId;
+            cout << "Current node position: (" << nodes[nodeId].getX() << ", " << nodes[nodeId].getY() << ", " << nodes[nodeId].getZ() << ")" << endl;
+            cout << "Enter x, y, z position: \n>>";
+            cin >> x >> y >> z;
+            changeNodePosition(nodeId, x, y, z);
+            cout << "Node position changed!" << endl;
+        }
     }
 }
 
@@ -76,7 +114,19 @@ void simulate(vector<tuple<int, int, int>> nodePositions, int numberOfBroadcasts
 
     broadcastNodes(nodePointers, numberOfBroadcasts);
 
-    startCLI();
+    Workers worker_threads(2);
+    worker_threads.start(); // Create 4 internal threads
+
+    worker_threads.post([] {
+        regularBroadcasting();
+    });
+
+    worker_threads.post([] {
+        startCLI();
+    });
+
+    worker_threads.stop();
+
 }
 
 void runWithLineNodes(int numberOfNodes, int numberOfBroadcasts, int signalStrength) {
@@ -105,68 +155,64 @@ void runWithScatteredNodes(int numberOfNodes, int numberOfBroadcasts, int signal
 }
 
 void printSimulationPreset(int option, int numberOfNodes, int signalStrength, string position) {
-    cout << "[" << option << "]:\t" << numberOfNodes << "\t\t" << signalStrength << "\t\t" << position << endl;
+    cout << "[" << option << "]:\t" << numberOfNodes << "\t" << signalStrength << "\t\t" << position << endl;
 }
 
 // Opens a console where the user can control the simulation.
 void startSimulationConsole() {
     cout << "------------- Wireless Mesh simulation -------------" << endl << endl;
     cout << "This program simulates a Wireless Mesh network." << endl;
-    cout << "The program can be exited at any time by typing '69'." << endl << endl;
     cout << "Do you want to run the simulation with predefined values? (y/n)" << endl;
+    cout << ">>";
     string answer;
     cin >> answer;
     if (answer == "y") {
-        chooseSimulation:
-            cout << "Choose your simulation: [0-3]" << endl;
-            cout << "------------- Simulation options -------------" << endl;
-            cout << "\tNodes\tBroadcasts\tsignal Strength\tPosition" << endl;
-            printSimulationPreset(0, 10, 500, "Random");
-            printSimulationPreset(1, 50, 300, "Random");
-            printSimulationPreset(2, 100, 100, "Random");
-            printSimulationPreset(3, 200, 20, "Random");
 
-            int simulation;
-            cin >> simulation;
+        cout << "Choose your simulation: [0-3]" << endl;
+        cout << "------------- Simulation options -------------" << endl;
+        cout << "\tNodes\tSignal Strength\tPosition" << endl;
+        printSimulationPreset(0, 10, 500, "Random");
+        printSimulationPreset(1, 50, 300, "Random");
+        printSimulationPreset(2, 100, 100, "Random");
+        printSimulationPreset(3, 200, 100, "Random");
 
-            switch (simulation) {
-                case 0:
-                    cout << "Running simulation 0" << endl;
-                    runWithScatteredNodes(10, 10, 500);
-                    return;
-                case 1:
-                    cout << "Running simulation 1" << endl;
-                    runWithScatteredNodes(50, 25, 300);
-                    return;
-                case 2:
-                    cout << "Running simulation 2" << endl;
-                    runWithScatteredNodes(100, 50, 100);
-                    return;
-                case 3:
-                    cout << "Running simulation 3" << endl;
-                    runWithScatteredNodes(200, 75, 20);
-                    return;
-                case 69:
-                    return;
-                default:
-                    cout << "Invalid input, try again." << endl;
-                    goto chooseSimulation;
-            }
+        cout << ">>";
+        int simulation;
+        cin >> simulation;
+
+        switch (simulation) {
+            case 0:
+                cout << "Running simulation 0" << endl;
+                runWithScatteredNodes(10, 10, 500);
+                return;
+            case 1:
+                cout << "Running simulation 1" << endl;
+                runWithScatteredNodes(50, 25, 300);
+                return;
+            case 2:
+                cout << "Running simulation 2" << endl;
+                runWithScatteredNodes(100, 50, 100);
+                return;
+            case 3:
+                cout << "Running simulation 3" << endl;
+                runWithScatteredNodes(200, 100, 400);
+                return;
+            default:
+                cout << "Invalid input" << endl;
+                return;
+        }
     } else {
         cout << "Running simulation with user input values" << endl;
-        cout << "Enter number of nodes: " << endl;
+        cout << "Enter number of nodes: " << endl << ">>";
         int numberOfNodes;
         cin >> numberOfNodes;
-        cout << "Enter number of broadcasts: " << endl;
-        int numberOfBroadcasts;
-        cin >> numberOfBroadcasts;
         int signalStrength;
-        cout << "Enter the signal strength for the nodes: " << endl;
+        cout << "Enter the signal strength for the nodes: " << endl << ">>";
         cin >> signalStrength;
         cout << "------------- How would you like to position the nodes? -------------" << endl;
-        cout << "[0]:Choose the position of each node" << endl;
-        cout << "[1]:Scatter the nodes randomly" << endl;
-        cout << "[2]:Place the nodes in a line" << endl;
+        cout << "[0]: Choose the position of each node (not recommended if there are many nodes!)" << endl;
+        cout << "[1]: Scatter the nodes randomly" << endl;
+        cout << "[2]: Place the nodes in a line" << endl << ">>";
         int positionChoice;
         cin >> positionChoice;
 
@@ -179,13 +225,16 @@ void startSimulationConsole() {
                     cin >> x >> y >> z;
                     nodePositions.emplace_back(x, y, z);
                 }
-                simulate(nodePositions, numberOfBroadcasts, signalStrength);
+                cout << "Loading custom simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
+                simulate(nodePositions, numberOfNodes/2, signalStrength);
                 break;
             case 1:
-                runWithScatteredNodes(numberOfNodes, numberOfBroadcasts, signalStrength);
+                cout << "Loading custom scattered nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
+                runWithScatteredNodes(numberOfNodes, numberOfNodes/2, signalStrength);
                 break;
             case 2:
-                runWithLineNodes(numberOfNodes, numberOfBroadcasts, signalStrength);
+                cout << "Loading custom line nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
+                runWithLineNodes(numberOfNodes, numberOfNodes/2, signalStrength);
                 break;
             default:
                 cout << "Invalid choice. Retry with correct option" << endl;
@@ -200,16 +249,6 @@ void startSimulationConsole() {
 
 // Run simulation
 int main() {
-    Workers worker_threads(4);
-    worker_threads.start(); // Create 4 internal threads
-
-    worker_threads.post([] {
-        // wait 3 seconds
-        //this_thread::sleep_for(chrono::seconds(3));
-        cout << "last " << this_thread::get_id() << endl;
-    });
-
-    worker_threads.stop();
     startSimulationConsole();
     cout << "Exiting program." << endl;
 
