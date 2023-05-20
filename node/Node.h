@@ -12,7 +12,7 @@ using RoutingTable = std::map<int, std::tuple<int, double, int>>;
 
 class Node {
 private:
-    //TODO: unit_32
+    //TODO: update  som of the values to unit_32
     int id;
     int x;
     int y;
@@ -44,6 +44,10 @@ public:
     void updateRoutingTable(const RoutingTable &tableB, int neighborId);
 
     double calculateSignalStrength(Node *node);
+
+    int getId() const;
+
+    void setPosition(int xPos, int yPos, int zPos);
 };
 
 #endif // NODE_H

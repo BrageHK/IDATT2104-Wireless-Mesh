@@ -4,7 +4,18 @@ Node::Node(int nodeId, int xPos, int yPos, int zPos, double power) : id(nodeId),
     routingTable[id] = std::make_tuple(id, 0, 0);
 }
 
-// This method sends routing table information to other nodes in range to update the other nodes.
+int Node::getId() const {
+    return id;
+}
+
+void Node::setPosition(int xPos, int yPos, int zPos) {
+    x = xPos;
+    y = yPos;
+    z = zPos;
+}
+
+
+// This method sends routing table information to other nodes in range to updateNodePointers the other nodes.
 void Node::broadcast() {
     this->routingTable[id] = std::make_tuple(id, std::get<1>(routingTable[id]), std::get<2>(routingTable[id]) + 2);
     for(Node* node : getNodesInRadius()) {
@@ -34,6 +45,7 @@ std::vector<Node*> Node::getNodesInRadius() {
     return nodesInRadius;
 }
 
+// not needed
 void Node::updateOwnTableFromAllInRange() {
     for (Node* otherNode : getNodesInRadius()) {
         updateRoutingTable(otherNode->routingTable, id);
@@ -49,7 +61,7 @@ void Node::updateRoutingTable(const RoutingTable& tableB, int neighborId) {
         if (tableA.find(destination) == tableA.end()) {  // If the destination does not exist in A's table, add it
             tableA[destination] = std::make_tuple(neighborId, numHopsB + 1, seqNumberB);
         }
-        else {  // If the destination exists, update it based on DSDV conditions
+        else {  // If the destination exists, updateNodePointers it based on DSDV conditions
             auto& [_, numHopsA, seqNumberA] = tableA[destination];
 
             if (seqNumberB > seqNumberA) {
@@ -98,7 +110,7 @@ void Node::printRoutingTable() const {
     for (const auto& entry : routingTable) {
         std::cout << ", Destination: " << entry.first;
         std::cout << ", Next Hop: " << std::get<0>(entry.second);
-        std::cout << ", Signal Strength: " << std::get<1>(entry.second);
+        std::cout << ", Number of hops: " << std::get<1>(entry.second);
         std::cout << ", Sequence Number: " << std::get<2>(entry.second) << std::endl;
     }
     std::cout << std::endl;
