@@ -8,11 +8,13 @@
 #include <map>
 #include <tuple>
 
+class Topography;
+
 using RoutingTable = std::map<int, std::tuple<int, double, int>>;
 
 class Node {
 private:
-    //TODO: unit_32
+    //TODO: update  som of the values to unit_32
     int id;
     int x;
     int y;
@@ -21,9 +23,18 @@ private:
     const double MIN_SIGNAL_STRENGTH = 0.02;
     RoutingTable routingTable;
     std::vector<Node*> allNodes;
+    Topography* topography;
 
 public:
-    Node(int nodeId, int xPos, int yPos, int zPos, double power);
+    Node(int nodeId, int xPos, int yPos, int zPos, double power, Topography* topography);
+
+    int getX() const;
+
+    int getY() const;
+
+    int getZ() const;
+
+    double getSignalPower() const;
 
     void sendRoutingTable(Node& neighbor);
 
@@ -44,6 +55,12 @@ public:
     void updateRoutingTable(const RoutingTable &tableB, int neighborId);
 
     double calculateSignalStrength(Node *node);
+
+    int getId() const;
+
+    void setPosition(int xPos, int yPos, int zPos);
+
+    void sendMessage(int receiverId, std::string basicString, std::vector<std::pair<Node*, Node*>>& connectedDrones);
 };
 
 #endif // NODE_H
