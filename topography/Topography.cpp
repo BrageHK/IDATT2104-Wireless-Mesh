@@ -488,5 +488,64 @@ int Topography::getTotalDroneInfluence(const std::vector<Node*>& nodes, int x, i
         file.close();
     }
 
+void Topography::printMapToConsole(const std::vector<Node*>& nodes,
+                                   const std::vector<std::pair<Node*, Node*>>& connectedDrones) {
+    int width = elevationData[0].size();
+    int height = elevationData.size();
+
+    std::vector<std::vector<bool>> linePoints(height, std::vector<bool>(width, false));
+    for (const auto& connectedDrone : connectedDrones) {
+        auto points = drawLine(connectedDrone.first, connectedDrone.second);
+        for (const auto& point : points) {
+            linePoints[point.second][point.first] = true;
+        }
+    }
+
+    int minElevation = elevationData[0][0];
+    int maxElevation = elevationData[0][0];
+    for (const auto& row : elevationData) {
+        for (const auto& elevation : row) {
+            if (elevation < minElevation) {
+                minElevation = elevation;
+            }
+            if (elevation > maxElevation) {
+                maxElevation = elevation;
+            }
+        }
+    }
+
+    // Influence chars
+    std::string influenceChars = ".:-=+#%@";
+    const int minInfluenceColor = 20;  // Set this to the minimum influence needed to color the character green
+
+    // Write pixel data
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int elevation = elevationData[y][x];
+            if (isDronePosition(nodes, x, y)) {
+                std::cout << "\033[41mD";  // Drone position (red background)
+            } else if (linePoints[y][x]) {
+                std::cout << "\033[44mL";  // Connected drone line (blue background)
+            } else {
+                int totalInfluence = getTotalDroneInfluence(nodes, x, y);
+                if (totalInfluence > 0) {
+                    char influenceChar = influenceChars[totalInfluence / 10];
+                    if (totalInfluence >= minInfluenceColor) {
+                        std::cout << "\033[48;2;0;255;0m" << influenceChar;  // Influence character (green background)
+                    } else {
+                        std::cout << influenceChar;
+                    }
+                } else {
+                    // Normalize elevation to 0-255 for grayscale
+                    int normalizedElevation = 255 - static_cast<int>(((elevation - minElevation) / static_cast<double>(maxElevation - minElevation)) * 255);
+                    std::cout << "\033[38;2;" << normalizedElevation << ";" << normalizedElevation << ";" << normalizedElevation << "m"  // Set foreground color
+                              << "\033[48;2;" << normalizedElevation << ";" << normalizedElevation << ";" << normalizedElevation << "mO";  // Set background color and print character
+                }
+            }
+        }
+        std::cout << "\033[0m\n";  // Reset color after each line
+    }
+}
+
 
 

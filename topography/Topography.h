@@ -42,4 +42,6 @@
      int getHeight(int x, int y);
 
 
+     void
+     printMapToConsole(const std::vector<Node*> &nodes, const std::vector<std::pair<Node *, Node *>> &connectedDrones);
  };

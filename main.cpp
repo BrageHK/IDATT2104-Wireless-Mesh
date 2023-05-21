@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 #include <random>
+#include <unordered_map>
 #include "node/Node.h"
 #include "worker/Workers.h"
 #include "topography/Topography.h"
@@ -118,8 +119,14 @@ void startCLI() {
             nodePointers.push_back(&nodes[nodeId]);
             cout << "Node created with ID: " << nodeId << endl;
         } else if(command == "send") {
+            int choice;
+            cout << "[1]: Only send message" << endl;
+            cout << "[2]: Send message and generate image to file" << endl;
+            cout << "[2]: Send message and print image to console" << endl;
+            cout << ">> ";
+            cin >> choice;
             vector<std::pair<Node*, Node*>> connectedDrones;
-            cout << "There are " << nodes.size() << " nodes in the network." << endl;
+            cout << "\nThere are " << nodes.size() << " nodes in the network." << endl;
             int senderId, receiverId;
             string message;
             cout << "Enter the ID of the sender: \n>>";
@@ -130,10 +137,15 @@ void startCLI() {
             cin >> ws;
             getline(cin, message);
             sendMessage(senderId, receiverId, message, connectedDrones);
-            string filename = "SimulationPictures/"+to_string(fileNumber)+".bmp";
-            cout << "Generating image..." << endl;
-            topography.writeMapToBMP(nodePointers, connectedDrones, filename);
-            cout << "image saved to " << filename << endl;
+            if(choice == 2) {
+                string filename = "SimulationPictures/"+to_string(fileNumber)+".bmp";
+                cout << "Generating image file. Pleas wait..." << endl;
+                topography.writeMapToBMP(nodePointers, connectedDrones, filename);
+                cout << "image saved to " << filename << endl;
+            }
+            if(choice == 3) {
+                topography.printMapToConsole(nodePointers, connectedDrones);
+            }
             fileNumber++;
         } else if(command == "nodeInfo") {
             int nodeId;
@@ -296,13 +308,27 @@ void startSimulationConsole() {
 
 // Run simulation
 int main() {
-    //heightData = topography.readElevationData("output.txt");
-    heightData = topography.generateCityElevation(500, 500, 20,80,1000,15,100);
-    //heightData = topography.generateMountainElevation(500, 500, 0, 60);
+    cout << "Choose the type of topography: \n[0]: City \n[1]: Mountain" << endl << ">>";
+    int topographyChoice;
+    cin >> topographyChoice;
+
+    switch(topographyChoice) {
+        case 0:
+            heightData = topography.generateCityElevation(500, 500, 20, 80, 1000, 15, 100);
+            cout << "You chose City topography." << endl;
+            break;
+        case 1:
+            heightData = topography.generateMountainElevation(500, 500, 0, 60);
+            cout << "You chose Mountain topography." << endl;
+            break;
+        default:
+            cout << "Invalid choice, defaulting to City topography." << endl;
+            heightData = topography.generateCityElevation(500, 500, 20, 80, 1000, 15, 100);
+            break;
+    }
     topography.setElevationData(heightData);
-
     startSimulationConsole();
-    cout << "Exiting program." << endl;
 
+    cout << "Exiting program." << endl;
     return 0;
 }
