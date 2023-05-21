@@ -323,19 +323,7 @@ int getGrayscale(int elevation, int minElevation, int maxElevation) {
     return 255 - ((elevation - minElevation) * 255) / (maxElevation - minElevation);
 }
 
-    int getDroneInfluence(int dronePower, int distance) {
-        if (distance == 0) {
-            return 100;
-        }
-        // Implement the inverse square law
-        double influence = dronePower / (2.0 *M_PI * distance * distance);
-        // Scale influence to be between 0 and 100
-        influence *= 100;
-        if (influence > 100) {
-            influence = 100;
-        }
-        return static_cast<int>(influence);
-    }
+
 
 
     std::vector<std::pair<int, int>> drawLine(Node* nodeA, Node* nodeB) {
@@ -380,11 +368,11 @@ int Topography::getTotalDroneInfluence(const std::vector<Node*>& nodes, int x, i
     int totalInfluence = 0;
     for (const auto& node : nodes) {
         int distance = std::sqrt(std::pow(x - node->getX(), 2) + std::pow(y - node->getY(), 2));
-        double range = std::sqrt(node->getSignalPower() / (2.0 * M_PI * 0.05));
+        double range = std::sqrt(node->getSignalPower() / (2.0 * M_PI * 0.2));
         if (distance != 0 && distance <= range) {
             if (!isObstructionBetween(node->getX(), node->getY(), node->getZ(), x, y, elevationData[y][x])) {
                 // Calculate influence directly here
-                double influence = node->getSignalPower() / (2.0 * M_PI * distance * distance);
+                double influence = node->getSignalPower() / ( M_PI * distance * distance);
                 influence *= 100;
                 if (influence > 100) {
                     influence = 100;
