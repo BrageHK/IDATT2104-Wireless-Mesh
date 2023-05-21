@@ -1,6 +1,8 @@
 #include "Node.h"
+#include "../topography/Topography.h"
 
-Node::Node(int nodeId, int xPos, int yPos, int zPos, double power) : id(nodeId), x(xPos), y(yPos), z(zPos), signalPower(power) {
+Node::Node(int nodeId, int xPos, int yPos, int zPos, double power, Topography* topography)
+        : id(nodeId), x(xPos), y(yPos), z(zPos), signalPower(power), topography(topography) {
     routingTable[id] = std::make_tuple(id, 0, 0);
 }
 
@@ -87,9 +89,11 @@ double Node::calculateSignalStrength(Node* node) {
 }
 
 double Node::calculateSignalStrength(int destX, int destY, int destZ) {
+    if(topography->isObstructionBetween(x, y, z, destX, destY, destZ))
+        return -1.0;
     double distance = std::sqrt(std::pow(x - destX, 2) + std::pow(y - destY, 2) + std::pow(z - destZ, 2));
     if(distance == 0) return signalPower;
-    double signalStrength = signalPower / (4.0 * M_PI * distance * distance);
+    double signalStrength = signalPower / (2.0 * M_PI * distance * distance);
 
     // Check if the signal strength is too low
     if (signalStrength < MIN_SIGNAL_STRENGTH) {
@@ -119,18 +123,33 @@ void Node::updateAllNodes(std::vector<Node*> &allNodes) {
     this->allNodes = allNodes;
 }
 
-double Node::getSignalPower() {
+double Node::getSignalPower() const {
     return signalPower;
 }
 
-int Node::getZ() {
+int Node::getZ() const {
     return z;
 }
 
-int Node::getY() {
+int Node::getY() const {
     return y;
 }
 
-int Node::getX() {
+int Node::getX() const {
     return x;
+}
+
+void Node::sendMessage(int receiverId, std::string basicString, std::vector<std::pair<Node*, Node*>>& connectedDrones) {
+    if(routingTable.find(receiverId) == routingTable.end()) {
+        std::cout << "Node " << id << " does not have a route to node " << receiverId << std::endl;
+        return;
+    }
+    int nextNode = std::get<0>(routingTable[receiverId]);
+    connectedDrones.emplace_back(this, allNodes[nextNode]);
+    if(nextNode == id) {
+        std::cout << "Message received by node " << id << ": " << basicString << std::endl;
+        return;
+    }
+    std::cout << "Message sent from node " << id << " to node " << nextNode << std::endl;
+    allNodes[nextNode]->sendMessage(receiverId, basicString, connectedDrones);
 }

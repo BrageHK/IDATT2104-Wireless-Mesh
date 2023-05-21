@@ -12,22 +12,25 @@ using namespace std;
 vector<Node> nodes;
 vector<Node*> nodePointers;
 bool stop = false;
+Topography topography;
+vector<vector<int>> heightData;
+int fileNumber = 0;
 
 // This method makes sure that every node has a pointer to every other node. This is used for keeping track of the
-// position of the nodes in the network. This way, the program can simulate the position of nodes. As every node
-// knows the position of every other node, it is possible to calculate what nodes are reachable. In the real word,
+// position of the inputNodes in the network. This way, the program can simulate the position of inputNodes. As every node
+// knows the position of every other node, it is possible to calculate what inputNodes are reachable. In the real word,
 // this would be done by using actual antennas and measuring the signal strength.
-void updateNodePointers(vector<Node*>& nodes) {
-    for (auto& node : nodes) {
-        node->updateAllNodes(nodes);
+void updateNodePointers(vector<Node*>& inputNodes) {
+    for (auto& node : inputNodes) {
+        node->updateAllNodes(inputNodes);
     }
 }
 
-// This method broadcasts the routing table to all nodes in range. Nodes in range will update their routing table
+// This method broadcasts the routing table to all inputNodes in range. Nodes in range will update their routing table
 // based on the information they receive.
-void broadcastNodes(vector<Node*>& nodes, int numberOfBroadcasts) {
+void broadcastNodes(vector<Node*>& inputNodes, int numberOfBroadcasts) {
     for (int i = 0; i < numberOfBroadcasts; i++) {
-        for (auto& node : nodes) {
+        for (auto& node : inputNodes) {
             node->broadcast();
         }
     }
@@ -39,15 +42,29 @@ void printRoutingTables() {
     }
 }
 
-void generateImage() {
-    Topography topography;//TODO: fix this
-    //topography.generateImage(nodes);
-}
-
 void changeNodePosition(int nodeId, int x, int y, int z) {
     for (auto& node : nodes) {
         if (node.getId() == nodeId) {
             node.setPosition(x, y, z);
+        }
+    }
+}
+
+void getNodeInfo(int nodeId) {
+    //print routing table and position
+    for (auto& node : nodes) {
+        if (node.getId() == nodeId) {
+            cout << "----------- Node " << nodeId << " -----------" << endl;
+            cout << "Position: (" << node.getX() << ", " << node.getY() << ", " << node.getZ() << ")" << endl;
+            node.printRoutingTable();
+        }
+    }
+}
+
+void sendMessage(int senderId, int receiverId, const string& message, vector<pair<Node*, Node*>>& connectedDrones) {
+    for (auto& node : nodes) {
+        if (node.getId() == senderId) {
+            node.sendMessage(receiverId, message, connectedDrones);
         }
     }
 }
@@ -57,7 +74,7 @@ void regularBroadcasting() {
     while(!stop) {
         broadcastNodes(nodePointers, 1);
         // Sleep for 15 seconds
-        this_thread::sleep_for(chrono::seconds(15));
+        this_thread::sleep_for(chrono::seconds(5));
     }
 }
 
@@ -73,16 +90,13 @@ void startCLI() {
             cout << "Commands:" << endl;
             cout << "quit: quit the program" << endl;
             cout << "print: print the routing tables of all nodes" << endl;
-            cout << "generate: generate an image of the wireless mesh network with buildings" << endl;
+            cout << "nodeInfo: print information about a node" << endl;
             cout << "change: change the position of a node" << endl;
             cout << "create: create a new node" << endl;
-            cout << "send: send a message from a node to another node" << endl;
+            cout << "send: send a message from a node to another node. Also generates an image that shows the path chosen" << endl;
             cout << "help: print this help message" << endl;
         } else if (command == "print") {
             printRoutingTables();
-        } else if (command == "generate") {
-            generateImage();
-            cout << "Image generated!" << endl;
         } else if (command == "change") {
             int nodeId, x, y, z;
             cout << "Enter the node ID: ";
@@ -99,14 +113,36 @@ void startCLI() {
             cout << "Enter the signal strength of the new node: ";
             cin >> signalStrength;
             int nodeId = nodes.size();
-            Node node(nodeId, x, y, z, signalStrength); // Set signal strength to 0 for now
+            Node node(nodeId, x, y, z, signalStrength, &topography); // Set signal strength to 0 for now
             nodes.push_back(node);
             nodePointers.push_back(&nodes[nodeId]);
             cout << "Node created with ID: " << nodeId << endl;
         } else if(command == "send") {
-
-        } else {
+            vector<std::pair<Node*, Node*>> connectedDrones;
+            cout << "There are " << nodes.size() << " nodes in the network." << endl;
+            int senderId, receiverId;
+            string message;
+            cout << "Enter the ID of the sender: \n>>";
+            cin >> senderId;
+            cout << "Enter the ID of the receiver: \n>>";
+            cin >> receiverId;
+            cout << "Enter the message: \n>>";
+            cin >> ws;
+            getline(cin, message);
+            sendMessage(senderId, receiverId, message, connectedDrones);
+            string filename = "SimulationPictures/"+to_string(fileNumber)+".bmp";
+            cout << "Generating image..." << endl;
+            topography.writeMapToBMP(nodePointers, connectedDrones, filename);
+            cout << "image saved to " << filename << endl;
+            fileNumber++;
+        } else if(command == "nodeInfo") {
+            int nodeId;
+            cout << "Enter the ID of the node: ";
+            cin >> nodeId;
+            getNodeInfo(nodeId);
+        } else{
             cout << "Invalid command! Use the \"help\" command to see available commands." << endl;
+            cin.clear();
         }
     }
 }
@@ -117,7 +153,8 @@ void simulate(vector<tuple<int, int, int>> nodePositions, int numberOfBroadcasts
         int x = get<0>(nodePositions[i]);
         int y = get<1>(nodePositions[i]);
         int z = get<2>(nodePositions[i]);
-        Node node(i, x, y, z, signalStrength);
+        Node node(i, x, y, z, signalStrength, &topography);
+
         nodes.push_back(node);
     }
 
@@ -143,26 +180,20 @@ void simulate(vector<tuple<int, int, int>> nodePositions, int numberOfBroadcasts
 
 }
 
-void runWithLineNodes(int numberOfNodes, int numberOfBroadcasts, int signalStrength) {
-    //TODO: make sure that nodes are not placed in buildings
-    vector<tuple<int, int, int>> nodePositions;
-    for(int i = 0; i < numberOfNodes; i++) {
-        nodePositions.emplace_back(i*10, 0, 0); // Placing nodes in line (x-axis)
-    }
-    simulate(nodePositions, numberOfBroadcasts, signalStrength);
-}
-
+// Nodes may share the same position, but they can't be placed inside a building.
 void runWithScatteredNodes(int numberOfNodes, int numberOfBroadcasts, int signalStrength) {
-    //TODO: make sure that nodes are not placed on top of each other and not in buildings
     random_device dev;
     mt19937 rng(dev());
     vector<tuple<int, int, int>> nodePositions;
-    uniform_int_distribution<mt19937::result_type> dist1(0, 500);
+    uniform_int_distribution<mt19937::result_type> dist1(0, 499);
     uniform_int_distribution<mt19937::result_type> dist2(0, 20);
     for (int i = 0; i < numberOfNodes; i++) {
         int x = dist1(rng);
         int y = dist1(rng);
         int z = dist2(rng);
+        if(topography.getHeight(x, y) > z) {
+            z += topography.getHeight(x, y) + 1;
+        }
         nodePositions.emplace_back(x, y, z);
     }
     simulate(nodePositions, numberOfBroadcasts, signalStrength);
@@ -189,6 +220,9 @@ void startSimulationConsole() {
         printSimulationPreset(1, 50, 3000, "Random");
         printSimulationPreset(2, 100, 1000, "Random");
         printSimulationPreset(3, 200, 400, "Random");
+        cout << "WARNING: Simulation option 4 and 5 may take a long time to complete!" << endl;
+        printSimulationPreset(4, 600, 100, "Random");
+        printSimulationPreset(5, 750, 150, "Random");
 
         cout << ">>";
         int simulation;
@@ -209,7 +243,15 @@ void startSimulationConsole() {
                 return;
             case 3:
                 cout << "Running simulation 3" << endl;
-                runWithScatteredNodes(200, 100, 400);
+                runWithScatteredNodes(200, 50, 400);
+                return;
+            case 4:
+                cout << "Running simulation 4" << endl;
+                runWithScatteredNodes(600, 200, 100);
+                return;
+            case 5:
+                cout << "Running simulation 5" << endl;
+                runWithScatteredNodes(750, 100, 150);
                 return;
             default:
                 cout << "Invalid input" << endl;
@@ -226,7 +268,6 @@ void startSimulationConsole() {
         cout << "------------- How would you like to position the nodes? -------------" << endl;
         cout << "[0]: Choose the position of each node (not recommended if there are many nodes!)" << endl;
         cout << "[1]: Scatter the nodes randomly" << endl;
-        cout << "[2]: Place the nodes in a line" << endl << ">>";
         int positionChoice;
         cin >> positionChoice;
 
@@ -240,66 +281,28 @@ void startSimulationConsole() {
                     nodePositions.emplace_back(x, y, z);
                 }
                 cout << "Loading custom simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                simulate(nodePositions, numberOfNodes/2, signalStrength);
+                simulate(nodePositions, numberOfNodes/4, signalStrength);
                 break;
             case 1:
                 cout << "Loading custom scattered nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                runWithScatteredNodes(numberOfNodes, numberOfNodes/2, signalStrength);
-                break;
-            case 2:
-                cout << "Loading custom line nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                runWithLineNodes(numberOfNodes, numberOfNodes/2, signalStrength);
+                runWithScatteredNodes(numberOfNodes, numberOfNodes/4, signalStrength);
                 break;
             default:
                 cout << "Invalid choice. Retry with correct option" << endl;
                 break;
-        }
-
-        for (const auto& node : nodes) {
-            node.printRoutingTable();
         }
     }
 }
 
 // Run simulation
 int main() {
+    //heightData = topography.readElevationData("output.txt");
+    heightData = topography.generateCityElevation(500, 500, 20,80,1000,15,100);
+    //heightData = topography.generateMountainElevation(500, 500, 0, 60);
+    topography.setElevationData(heightData);
+
     startSimulationConsole();
     cout << "Exiting program." << endl;
-
-    Topography geoTest;
-
-
-    std::vector<std::vector<int>> heightData = geoTest.readElevationData("output.txt");
-
-    cout << "Hello World!" << endl;
-
-
-    Node node1(1, 50, 50, 5, 10.0);
-    Node node2(2, 150, 150, 10, 20.0);
-    Node node3(3, 321, 250, 15, 100.0);
-    Node node4(4, 213, 350, 20, 40.0);
-    Node node5(5, 213, 450, 25, 100.0);
-
-    // Add pointer of  them to a vector
-    std::vector<Node*> nodes = {&node1, &node2, &node3, &node4, &node5};
-
-    cout << "Hello World!" << endl;
-
-    // Connect some of them together
-    std::vector<std::pair<Node*, Node*>> connectedDrones = {
-            {&node1, &node2},
-            {&node2, &node5},
-            {&node3, &node4},
-            {&node4, &node1},
-            {&node5, &node1},
-    };
-
-    cout << "Hello World!" << endl;
-
-    std::string filename = "output.bmp";
-
-    // Call the writeMapToBMP function with these test data
-    geoTest.writeMapToBMP(heightData, nodes, connectedDrones, filename);
 
     return 0;
 }

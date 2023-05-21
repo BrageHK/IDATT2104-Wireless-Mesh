@@ -3,4 +3,4 @@ project(Mesh)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(Mesh main.cpp node/Node.cpp node/Node.h worker/Workers.cpp worker/Workers.h topography/Topography.cpp topography/Topography.h)
+add_executable(Mesh main.cpp node/Node.cpp node/Node.h worker/Workers.cpp worker/Workers.h topography/Topography.cpp topography/Topography.h node/NodeManager.cpp node/NodeManager.h)

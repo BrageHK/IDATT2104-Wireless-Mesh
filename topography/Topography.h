@@ -12,6 +12,7 @@
  private:
      std::vector<std::vector<int>> elevationData;
 
+     int getTotalDroneInfluence(const std::vector<Node *> &nodes, int x, int y);
 
  public:
 
@@ -36,5 +37,9 @@
      void writeElevationData(const std::string &filename);
 
      std::vector<std::vector<int>>
-     generateCityElevation(int rows, int cols, int minBuildingHeight, int maxBuildingHeight, int numBuildings, int roadWidth, int roadSpacing) ;
+     generateCityElevation(int rows, int cols, int minBuildingHeight, int maxBuildingHeight, int numBuildings, int roadWidth, int roadSpacing);
+
+     int getHeight(int x, int y);
+
+
  };

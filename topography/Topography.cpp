@@ -246,11 +246,11 @@ std::vector<std::vector<int>> Topography::generateCityElevation(int rows, int co
         return data;
     }
 
-    int getHeight(const std::vector<std::vector<int>>& heightData, int x, int y) {
-        if (x < 0 || x >= heightData[0].size() || y < 0 || y >= heightData.size()) {
+    int Topography::getHeight(int x, int y) {
+        if (x < 0 || x >=elevationData[0].size() || y < 0 || y >= elevationData.size()) {
             throw std::out_of_range("Coordinates out of range");
         }
-        return heightData[y][x];
+        return elevationData[y][x];
     }
 
 
@@ -277,7 +277,7 @@ std::vector<std::vector<int>> Topography::generateCityElevation(int rows, int co
             int currentZ = static_cast<int>(startZ + i * stepZ);
 
             // Check if the actual height at this point is greater than the interpolated height
-            if (getHeight(elevationData, currentX, currentY) > currentZ) {
+            if (getHeight(currentX, currentY) > currentZ) {
                 return {currentX, currentY, currentZ};
             }
         }
@@ -309,7 +309,7 @@ std::vector<std::vector<int>> Topography::generateCityElevation(int rows, int co
             int currentZ = static_cast<int>(startZ + i * stepZ);
 
             // Check if the actual height at this point is greater than the interpolated height
-            if (getHeight(elevationData, currentX, currentY) > currentZ) {
+            if (getHeight(currentX, currentY) > currentZ) {
                 return true;
             }
         }
@@ -328,7 +328,7 @@ int getGrayscale(int elevation, int minElevation, int maxElevation) {
             return 100;
         }
         // Implement the inverse square law
-        double influence = dronePower / (2.0 * M_PI * distance * distance);
+        double influence = dronePower / (2.0 *M_PI * distance * distance);
         // Scale influence to be between 0 and 100
         influence *= 100;
         if (influence > 100) {
@@ -376,16 +376,25 @@ int getGrayscale(int elevation, int minElevation, int maxElevation) {
     }
 
 
-    int getTotalDroneInfluence(const std::vector<Node*>& nodes, int x, int y) {
-        int totalInfluence = 0;
-        for (const auto& node : nodes) {
-            int distance = std::sqrt(std::pow(x - node->getX(), 2) + std::pow(y - node->getY(), 2));
-            if (distance != 0) {
-                totalInfluence += getDroneInfluence(node->getSignalPower(), distance);
+int Topography::getTotalDroneInfluence(const std::vector<Node*>& nodes, int x, int y) {
+    int totalInfluence = 0;
+    for (const auto& node : nodes) {
+        int distance = std::sqrt(std::pow(x - node->getX(), 2) + std::pow(y - node->getY(), 2));
+        double range = std::sqrt(node->getSignalPower() / (2.0 * M_PI * 0.05));
+        if (distance != 0 && distance <= range) {
+            if (!isObstructionBetween(node->getX(), node->getY(), node->getZ(), x, y, elevationData[y][x])) {
+                // Calculate influence directly here
+                double influence = node->getSignalPower() / (2.0 * M_PI * distance * distance);
+                influence *= 100;
+                if (influence > 100) {
+                    influence = 100;
+                }
+                totalInfluence += static_cast<int>(influence);
             }
         }
-        return totalInfluence > 70 ? 70 : totalInfluence;  // Cap total influence at 100
     }
+    return totalInfluence > 70 ? 70 : totalInfluence;  // Cap total influence at 100
+}
 
     void writeInfluencedPixel(std::ofstream& file, int grayscale, int totalInfluence) {
         file.put(static_cast<int>((grayscale * (100.0 - totalInfluence)) / 100.0));
