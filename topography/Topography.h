@@ -9,20 +9,32 @@
 
  class Topography {
 
+ private:
+     std::vector<std::vector<int>> elevationData;
+
+
  public:
-     void writeMapToBMP(const std::vector<std::vector<int>>& heightData,
-                        const std::vector<Node*>& nodes,
-                        const std::vector<std::pair<Node*, Node*>>& connectedDrones,
-                        const std::string& filename);
+
+     Topography() : elevationData(500, std::vector<int>(500, 0)) {}
+
+     void setElevationData(const std::vector<std::vector<int>> &elevationData);
+
+     std::vector<std::vector<int>> getElevationData();
 
      std::vector<std::vector<int>> readElevationData(const std::string& filename);
 
-     std::tuple<int, int, int> findObstruction(const std::vector<std::vector<int>>& heightData,
-                                                        int startX, int startY, int startZ,
-                                                        int endX, int endY, int endZ);
+     void writeMapToBMP(const std::vector<Node*>& nodes,
+                        const std::vector<std::pair<Node*, Node*>>& connectedDrones,
+                        const std::string& filename);
 
-     bool isObstructionBetween(const std::vector<std::vector<int>>& heightData,
-                                        int startX, int startY, int startZ,
-                                        int endX, int endY, int endZ);
+     std::tuple<int, int, int> findObstruction(int startX, int startY, int startZ, int endX, int endY, int endZ);
 
-};
+     bool isObstructionBetween(int startX, int startY, int startZ, int endX, int endY, int endZ);
+
+     std::vector<std::vector<int>> generateMountainElevation(int rows, int cols, int minElevation, int maxElevation);
+
+     void writeElevationData(const std::string &filename);
+
+     std::vector<std::vector<int>>
+     generateCityElevation(int rows, int cols, int minBuildingHeight, int maxBuildingHeight, int numBuildings, int roadWidth, int roadSpacing) ;
+ };
