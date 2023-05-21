@@ -7,8 +7,21 @@
 #include "node/Node.h"
 #include "worker/Workers.h"
 #include "topography/Topography.h"
+#include <iostream>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/ioctl.h>
+#include <unistd.h>
+#endif
+
+
+
 
 using namespace std;
+
+
 
 vector<Node> nodes;
 vector<Node*> nodePointers;
@@ -77,6 +90,22 @@ void regularBroadcasting() {
         // Sleep for 15 seconds
         this_thread::sleep_for(chrono::seconds(5));
     }
+}
+
+std::pair<int, int> getTerminalSize() {
+#ifdef _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    int columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    int rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+#else
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    int columns = w.ws_col;
+    int rows = w.ws_row;
+#endif
+
+    return {columns, rows};
 }
 
 void startCLI() {
@@ -308,18 +337,56 @@ void startSimulationConsole() {
 
 // Run simulation
 int main() {
-    cout << "Choose the type of topography: \n[0]: City \n[1]: Mountain" << endl << ">>";
+    std::pair<int, int> terminalSize = getTerminalSize();
+    int width = terminalSize.first;
+    int height = terminalSize.second;
+
+    cout << "Choose the type of topography: \n[0]: Default City \n[1]: Default Mountain \n[2]: Custom City \n[3]: Custom Mountain \n[4]: Import from file \n[5]: Console-sized City \n[6]: Console-sized Mountain" << endl << ">>";
     int topographyChoice;
     cin >> topographyChoice;
+    string filename;
+    int customWidth, customHeight;
 
     switch(topographyChoice) {
         case 0:
             heightData = topography.generateCityElevation(500, 500, 20, 80, 1000, 15, 100);
-            cout << "You chose City topography." << endl;
+            cout << "You chose default City topography." << endl;
             break;
         case 1:
             heightData = topography.generateMountainElevation(500, 500, 0, 60);
-            cout << "You chose Mountain topography." << endl;
+            cout << "You chose default Mountain topography." << endl;
+            break;
+        case 2:
+            cout << "Enter the dimensions for the custom city (width height): " << endl << ">>";
+            cin >> customWidth >> customHeight;
+            // Assure positive dimensions
+            customWidth = abs(customWidth);
+            customHeight = abs(customHeight);
+            heightData = topography.generateCityElevation(customHeight, customWidth, 20, 80, 1000, 15, 100);
+            cout << "You chose custom City topography." << endl;
+            break;
+        case 3:
+            cout << "Enter the dimensions for the custom mountain (width height): " << endl << ">>";
+            cin >> customWidth >> customHeight;
+            // Assure positive dimensions
+            customWidth = abs(customWidth);
+            customHeight = abs(customHeight);
+            heightData = topography.generateMountainElevation(customHeight, customWidth, 0, 60);
+            cout << "You chose custom Mountain topography." << endl;
+            break;
+        case 4:
+            cout << "You chose to load topography from file." << endl; //TODO: Error handling
+            cout << "Enter filename: " << endl << ">>";
+            cin >> filename;
+            heightData = topography.readElevationData(filename);
+            break;
+        case 5:
+            heightData = topography.generateCityElevation(height, width, 20, 80, 1000, 15, 100);
+            cout << "You chose console-sized City topography." << endl;
+            break;
+        case 6:
+            heightData = topography.generateMountainElevation(height, width, 0, 60);
+            cout << "You chose console-sized Mountain topography." << endl;
             break;
         default:
             cout << "Invalid choice, defaulting to City topography." << endl;

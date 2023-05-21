@@ -1,9 +1,0 @@
-# ninja log v5
-1	174	7063866191053326	build.ninja	b50b34f115f12bff
-8	1260	7063834043908186	CMakeFiles/Mesh.dir/main.cpp.obj	44f448439f74dda3
-16	963	7063213728140782	CMakeFiles/Mesh.dir/worker/Workers.cpp.obj	d889a546a87858d1
-1164	1479	7063849203973464	Mesh.exe	122477c4e325d8dc
-4	971	7063834041016729	CMakeFiles/Mesh.dir/node/Node.cpp.obj	93e71a8d608bb528
-4	1164	7063849200833456	CMakeFiles/Mesh.dir/topography/Topography.cpp.obj	a98a17a19411197c
-3	592	7063866835203840	CMakeFiles/Mesh.dir/node/NodeManager.cpp.obj	4d8977d22a457b37
-593	934	7063866838585381	Mesh.exe	eab2b1a5c7ba93d4
