@@ -8,6 +8,7 @@
 #include "topography/Topography.h"
 #include <map>
 #include <functional>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -147,7 +148,7 @@ void sendMessageCLI() {
     int choice;
     cout << "[1]: Only send message" << endl;
     cout << "[2]: Send message and generate image to file" << endl;
-    cout << "[3]: Send message and print image to console" << endl;
+    cout << "[3]: Send message and print image to console (not recommended if width is wider than the console)" << endl;
     cout << ">> ";
     cin >> choice;
     vector<pair<Node*, Node*>> connectedDrones;
@@ -163,10 +164,15 @@ void sendMessageCLI() {
     getline(cin, message);
     sendMessage(senderId, receiverId, message, connectedDrones);
     if(choice == 2) {
-        string filename = "SimulationPictures/"+to_string(fileNumber)+".bmp";
-        cout << "Generating image file. Please wait..." << endl;
+        std::string directory = "SimulationPictures";
+        if (!std::filesystem::exists(directory)) {
+            std::filesystem::create_directory(directory);
+        }
+
+        std::string filename = directory + "/" + std::to_string(fileNumber) + ".bmp";
+        std::cout << "Generating image file. Please wait..." << std::endl;
         topography.writeMapToBMP(nodePointers, connectedDrones, filename);
-        cout << "image saved to " << filename << endl;
+        std::cout << "image saved to " << filename << std::endl;
     }
     if(choice == 3) {
         topography.printMapToConsole(nodePointers, connectedDrones);
@@ -188,7 +194,8 @@ void saveElevations(){
     topography.writeElevationData(filename);
     cout << "Elevation data saved to " << filename << endl;
 }
-
+//todo sjekk om lese og skrive til fil funker
+//todo fjern kommentarer og todoer
 void startCLI() {
     /*
     string command;
@@ -357,6 +364,8 @@ void printSimulationPreset(int option, int numberOfNodes, int signalStrength, st
 }
 
 // Opens a console where the user can control the simulation.
+//todo old code under here
+/*
 void startSimulationConsole() {
     cout << "------------- Wireless Mesh simulation -------------" << endl << endl;
     cout << "This program simulates a Wireless Mesh network." << endl;
@@ -445,7 +454,95 @@ void startSimulationConsole() {
                 break;
         }
     }
+} */
+//todo old code above here
+
+struct Simulation {
+    int id;
+    int nodes;
+    int signalStrength;
+    std::string description;
+};
+
+std::vector<Simulation> simulations = {
+        {0, 10, 5000, "Random"},
+        {1, 50, 3000, "Random"},
+        {2, 100, 1000, "Random"},
+        {3, 200, 400, "Random"},
+        {4, 600, 100, "Random"},
+        {5, 750, 150, "Random"}
+};
+
+void printSimulationOptions() {
+    cout << "------------- Simulation options -------------" << endl;
+    cout << "\tNodes\tSignal Strength\tPosition" << endl;
+    for (auto &simulation : simulations) {
+        printSimulationPreset(simulation.id, simulation.nodes, simulation.signalStrength, simulation.description);
+    }
+    cout << "WARNING: Simulation option 4 and 5 may take a long time to complete!" << endl;
 }
+
+void runSimulation(int simulationId) {
+    const auto& sim = simulations[simulationId];
+    std::cout << "Running simulation " << sim.id << std::endl;
+    runWithScatteredNodes(sim.nodes, sim.nodes / 4, sim.signalStrength);
+}
+
+void startSimulationConsole() {
+    std::cout << "------------- Wireless Mesh simulation -------------" << std::endl << std::endl;
+    std::cout << "This program simulates a Wireless Mesh network." << std::endl;
+    std::cout << "Do you want to run the simulation with predefined values? (y/n)" << std::endl;
+    std::cout << ">>";
+    std::string answer;
+    std::cin >> answer;
+    if (answer == "y") {
+        printSimulationOptions();
+        std::cout << ">>";
+        int simulation;
+        std::cin >> simulation;
+        if (simulation >= 0 && simulation < simulations.size()) {
+            runSimulation(simulation);
+        } else {
+            std::cout << "Invalid input" << std::endl;
+        }
+    } else {
+        cout << "Running simulation with user input values" << endl;
+        cout << "Enter number of nodes: " << endl << ">>";
+        int numberOfNodes;
+        cin >> numberOfNodes;
+        int signalStrength;
+        cout << "Enter the signal strength for the nodes: " << endl << ">>";
+        cin >> signalStrength;
+        cout << "------------- How would you like to position the nodes? -------------" << endl;
+        cout << "[0]: Choose the position of each node (not recommended if there are many nodes!)" << endl;
+        cout << "[1]: Scatter the nodes randomly" << endl;
+        int positionChoice;
+        cin >> positionChoice;
+
+        vector<tuple<int, int, int>> nodePositions;
+        switch (positionChoice) {
+            case 0:
+                for(int i=0; i<numberOfNodes; i++) {
+                    int x, y, z;
+                    cout << "Enter position for Node " << i+1 << "(x, y, z): ";
+                    cin >> x >> y >> z;
+                    nodePositions.emplace_back(x, y, z);
+                }
+                cout << "Loading custom simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
+                simulate(nodePositions, numberOfNodes/4, signalStrength);
+                break;
+            case 1:
+                cout << "Loading custom scattered nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
+                runWithScatteredNodes(numberOfNodes, numberOfNodes/4, signalStrength);
+                break;
+            default:
+                cout << "Invalid choice. Retry with correct option" << endl;
+                break;
+        }
+    }
+}
+
+
 
 // Run simulation
 int main() {
@@ -487,10 +584,18 @@ int main() {
             cout << "You chose custom Mountain topography." << endl;
             break;
         case 4:
-            cout << "You chose to load topography from file." << endl; //TODO: Error handling
+            cout << "You chose to load topography from file." << endl;
             cout << "Enter filename: " << endl << ">>";
             cin >> filename;
-            heightData = topography.readElevationData(filename);
+            {
+                ifstream ifile(filename);
+                if (ifile) { // Check if file exists
+                    heightData = topography.readElevationData(filename);
+                } else {
+                    cout << "File " << filename << " does not exist. Defaulting to City topography." << endl;
+                    heightData = topography.generateCityElevation(500, 500, 20, 80, 1000, 15, 100);
+                }
+            }
             break;
         case 5:
             heightData = topography.generateCityElevation(width, width, 20, 80, 1000, 5, 25);

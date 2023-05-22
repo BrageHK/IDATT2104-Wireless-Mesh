@@ -11,6 +11,8 @@
 #include <queue>
 #include <functional>
 #include <vector>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 class Workers {
 private:

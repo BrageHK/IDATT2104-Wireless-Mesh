@@ -3,6 +3,8 @@
 //
 
 #include "Workers.h"
+#include <cmath>
+
 
 Workers::Workers(int num_threads) : num_threads(num_threads) {}
 
