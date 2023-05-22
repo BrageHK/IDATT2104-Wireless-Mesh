@@ -1,0 +1,3 @@
+C:/Users/brage/Documents/skole/IDATT2104-Wireless-Mesh/cmake-build-debug/CMakeFiles/Mesh.dir
+C:/Users/brage/Documents/skole/IDATT2104-Wireless-Mesh/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/brage/Documents/skole/IDATT2104-Wireless-Mesh/cmake-build-debug/CMakeFiles/rebuild_cache.dir
