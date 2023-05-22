@@ -1,0 +1,3 @@
+D:/kode/wirelesh mesh/IDATT2104-Wireless-Mesh/cmake-build-debug/CMakeFiles/Mesh.dir
+D:/kode/wirelesh mesh/IDATT2104-Wireless-Mesh/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/kode/wirelesh mesh/IDATT2104-Wireless-Mesh/cmake-build-debug/CMakeFiles/rebuild_cache.dir
