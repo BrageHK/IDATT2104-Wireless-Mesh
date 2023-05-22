@@ -55,23 +55,16 @@ void printRoutingTables() {
 }
 
 void changeNodePosition(int nodeId, int x, int y, int z) {
-
-    for (auto& node : nodes) {
-        if (node.getId() == nodeId) {
-            node.setPosition(x, y, z);
-        }
-    }
+    Node& node = nodes[nodeId];
+    node.setPosition(x, y, z);
 }
 
 void getNodeInfo(int nodeId) {
-    //print routing table and position
-    for (auto& node : nodes) {
-        if (node.getId() == nodeId) {
-            cout << "----------- Node " << nodeId << " -----------" << endl;
-            cout << "Position: (" << node.getX() << ", " << node.getY() << ", " << node.getZ() << ")" << endl;
-            node.printRoutingTable();
-        }
-    }
+    // Print routing table and position
+    const Node& node = nodes[nodeId];
+    cout << "----------- Node " << nodeId << " -----------" << endl;
+    cout << "Position: (" << node.getX() << ", " << node.getY() << ", " << node.getZ() << ")" << endl;
+    node.printRoutingTable();
 }
 
 void sendMessage(int senderId, int receiverId, const string& message, vector<pair<Node*, Node*>>& connectedDrones) {
@@ -122,69 +115,116 @@ void printHelp() {
 
 void changeNodePositionCLI() {
     int nodeId, x, y, z;
+
     cout << "Enter the node ID: ";
-    cin >> nodeId;
+    while (!(cin >> nodeId) || nodeId < 0 || nodeId >= nodes.size()) {
+        cout << "Invalid node ID. Please enter a valid node ID: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
     cout << "Current node position: (" << nodes[nodeId].getX() << ", " << nodes[nodeId].getY() << ", " << nodes[nodeId].getZ() << ")" << endl;
+
     cout << "Enter the new position (x, y, z): ";
-    cin >> x >> y >> z;
+    while (!(cin >> x >> y >> z) || x < 0 || y < 0 || z < 0 || x > width-1 || y > height-1) {
+        cout << "Invalid position. Please enter valid x, y, and z coordinates: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
     changeNodePosition(nodeId, x, y, z);
+
     cout << "Node position changed!" << endl;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore leftover newline character
+
 }
 
 void createNodeCLI() {
-    int x, y, z, signalStrength;
+    double signalStrength;
+    int x, y, z;
+
     cout << "Enter the position for the new node (x, y, z): ";
-    cin >> x >> y >> z;
+    while (!(cin >> x >> y >> z) || x < 0 || y < 0 || z < 0 || x > width-1 || y > height-1) {
+        cout << "Invalid position. Please enter valid x, y, and z coordinates: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
     cout << "Enter the signal strength of the new node: ";
-    cin >> signalStrength;
+    while (!(cin >> signalStrength)) {
+        cout << "Invalid signal strength. Please enter a valid numeric value: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
     int nodeId = nodes.size();
     Node node(nodeId, x, y, z, signalStrength, &topography); // Set signal strength to 0 for now
     nodes.push_back(node);
     nodePointers.push_back(&nodes[nodeId]);
+
     cout << "Node created with ID: " << nodeId << endl;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore leftover newline character
+
 }
 
 void sendMessageCLI() {
+    vector<pair<Node*, Node*>> connectedDrones;
+    cout << "\nThere are " << nodes.size() << " nodes in the network." << endl;
+    int senderId, receiverId;
+    string message;
+    do {
+        cout << "Enter the ID of the sender: \n>>";
+        cin >> senderId;
+    } while(senderId < 0 || senderId >= nodes.size());
+    do {
+        cout << "Enter the ID of the receiver: \n>>";
+        cin >> receiverId;
+    } while(receiverId < 0 || receiverId >= nodes.size());
+    cout << "Enter the message: \n>>";
+    cin >> ws;
+    getline(cin, message);
+
+
     int choice;
     cout << "[1]: Only send message" << endl;
     cout << "[2]: Send message and generate image to file" << endl;
     cout << "[3]: Send message and print image to console (not recommended if width is wider than the console)" << endl;
     cout << ">> ";
     cin >> choice;
-    vector<pair<Node*, Node*>> connectedDrones;
-    cout << "\nThere are " << nodes.size() << " nodes in the network." << endl;
-    int senderId, receiverId;
-    string message;
-    cout << "Enter the ID of the sender: \n>>";
-    cin >> senderId;
-    cout << "Enter the ID of the receiver: \n>>";
-    cin >> receiverId;
-    cout << "Enter the message: \n>>";
-    cin >> ws;
-    getline(cin, message);
+
     sendMessage(senderId, receiverId, message, connectedDrones);
+
     if(choice == 2) {
         std::string directory = "SimulationPictures";
         if (!std::filesystem::exists(directory)) {
             std::filesystem::create_directory(directory);
         }
-
         std::string filename = directory + "/" + std::to_string(fileNumber) + ".bmp";
         std::cout << "Generating image file. Please wait..." << std::endl;
         topography.writeMapToBMP(nodePointers, connectedDrones, filename);
         std::cout << "image saved to " << filename << std::endl;
+        fileNumber++;
     }
     if(choice == 3) {
         topography.printMapToConsole(nodePointers, connectedDrones);
     }
-    fileNumber++;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore leftover newline character
+
 }
 
 void getNodeInfoCLI() {
     int nodeId;
+
     cout << "Enter the ID of the node: ";
-    cin >> nodeId;
+    while (!(cin >> nodeId) || nodeId < 0 || nodeId >= nodes.size()-1) {
+        cout << "Invalid node ID. Please enter a valid node ID: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
     getNodeInfo(nodeId);
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore leftover newline character
+
 }
 
 void saveElevations(){
@@ -193,88 +233,13 @@ void saveElevations(){
     cin >> filename;
     topography.writeElevationData(filename);
     cout << "Elevation data saved to " << filename << endl;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore leftover newline character
+
 }
+
 //todo sjekk om lese og skrive til fil funker
-//todo fjern kommentarer og todoer
 void startCLI() {
-    /*
-    string command;
-    cout << "Use the \"help\" command if you are stuck\nEnter a command: " << endl;
-    while(!stop) {
-        cout << ">> ";
-        cin >> command;
-        if (command == "quit" || command == "exit" || command == "q" || command == "e" || command == "stop" || command == "s" || command == "end" || command == "x") {
-            stop = true;
-        } else if (command == "help") {
-            cout << "Commands:" << endl;
-            cout << "quit: quit the program" << endl;
-            cout << "print: print the routing tables of all nodes" << endl;
-            cout << "nodeInfo: print information about a node" << endl;
-            cout << "change: change the position of a node" << endl;
-            cout << "create: create a new node" << endl;
-            cout << "send: send a message from a node to another node. Also generates an image that shows the path chosen" << endl;
-            cout << "help: print this help message" << endl;
-        } else if (command == "print") {
-            printRoutingTables();
-        } else if (command == "change") {
-            int nodeId, x, y, z;
-            cout << "Enter the node ID: ";
-            cin >> nodeId;
-            cout << "Current node position: (" << nodes[nodeId].getX() << ", " << nodes[nodeId].getY() << ", " << nodes[nodeId].getZ() << ")" << endl;
-            cout << "Enter the new position (x, y, z): ";
-            cin >> x >> y >> z;
-            changeNodePosition(nodeId, x, y, z);
-            cout << "Node position changed!" << endl;
-        } else if (command == "create") {
-            int x, y, z, signalStrength;
-            cout << "Enter the position for the new node (x, y, z): ";
-            cin >> x >> y >> z;
-            cout << "Enter the signal strength of the new node: ";
-            cin >> signalStrength;
-            int nodeId = nodes.size();
-            Node node(nodeId, x, y, z, signalStrength, &topography); // Set signal strength to 0 for now
-            nodes.push_back(node);
-            nodePointers.push_back(&nodes[nodeId]);
-            cout << "Node created with ID: " << nodeId << endl;
-        } else if(command == "send") {
-            int choice;
-            cout << "[1]: Only send message" << endl;
-            cout << "[2]: Send message and generate image to file" << endl;
-            cout << "[2]: Send message and print image to console" << endl;
-            cout << ">> ";
-            cin >> choice;
-            vector<pair<Node*, Node*>> connectedDrones;
-            cout << "\nThere are " << nodes.size() << " nodes in the network." << endl;
-            int senderId, receiverId;
-            string message;
-            cout << "Enter the ID of the sender: \n>>";
-            cin >> senderId;
-            cout << "Enter the ID of the receiver: \n>>";
-            cin >> receiverId;
-            cout << "Enter the message: \n>>";
-            cin >> ws;
-            getline(cin, message);
-            sendMessage(senderId, receiverId, message, connectedDrones);
-            if(choice == 2) {
-                string filename = "SimulationPictures/"+to_string(fileNumber)+".bmp";
-                cout << "Generating image file. Please wait..." << endl;
-                topography.writeMapToBMP(nodePointers, connectedDrones, filename);
-                cout << "image saved to " << filename << endl;
-            }
-            if(choice == 3) {
-                topography.printMapToConsole(nodePointers, connectedDrones);
-            }
-            fileNumber++;
-        } else if(command == "nodeInfo") {
-            int nodeId;
-            cout << "Enter the ID of the node: ";
-            cin >> nodeId;
-            getNodeInfo(nodeId);
-        } else{
-            cout << "Invalid command! Use the \"help\" command to see available commands." << endl;
-            cin.clear();
-        }
-    }*/
+
     string command;
     map<string, function<void()>> commandHandlers;
 
@@ -290,9 +255,11 @@ void startCLI() {
     commandHandlers["nodeInfo"] = getNodeInfoCLI;
     commandHandlers["save"] = saveElevations;
 
-    cout << "Use the \"help\" command if you are stuck\nEnter a command: " << endl;
+    cout << "Use the \"help\" command if you are stuck" << endl;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore leftover newline character
 
     while(!stop) {
+        cout << "Enter a command:" << endl;
         cout << ">> ";
         getline(cin, command);
 
@@ -364,98 +331,6 @@ void printSimulationPreset(int option, int numberOfNodes, int signalStrength, st
 }
 
 // Opens a console where the user can control the simulation.
-//todo old code under here
-/*
-void startSimulationConsole() {
-    cout << "------------- Wireless Mesh simulation -------------" << endl << endl;
-    cout << "This program simulates a Wireless Mesh network." << endl;
-    cout << "Do you want to run the simulation with predefined values? (y/n)" << endl;
-    cout << ">>";
-    string answer;
-    cin >> answer;
-    if (answer == "y") {
-
-        cout << "Choose your simulation: [0-3]" << endl;
-        cout << "------------- Simulation options -------------" << endl;
-        cout << "\tNodes\tSignal Strength\tPosition" << endl;
-        printSimulationPreset(0, 10, 5000, "Random");
-        printSimulationPreset(1, 50, 3000, "Random");
-        printSimulationPreset(2, 100, 1000, "Random");
-        printSimulationPreset(3, 200, 400, "Random");
-        cout << "WARNING: Simulation option 4 and 5 may take a long time to complete!" << endl;
-        printSimulationPreset(4, 600, 100, "Random");
-        printSimulationPreset(5, 750, 150, "Random");
-
-        cout << ">>";
-        int simulation;
-        cin >> simulation;
-
-        switch (simulation) {
-            case 0:
-                cout << "Running simulation 0" << endl;
-                runWithScatteredNodes(10, 10, 5000);
-                return;
-            case 1:
-                cout << "Running simulation 1" << endl;
-                runWithScatteredNodes(50, 25, 3000);
-                return;
-            case 2:
-                cout << "Running simulation 2" << endl;
-                runWithScatteredNodes(100, 50, 1000);
-                return;
-            case 3:
-                cout << "Running simulation 3" << endl;
-                runWithScatteredNodes(200, 50, 400);
-                return;
-            case 4:
-                cout << "Running simulation 4" << endl;
-                runWithScatteredNodes(600, 200, 100);
-                return;
-            case 5:
-                cout << "Running simulation 5" << endl;
-                runWithScatteredNodes(750, 100, 150);
-                return;
-            default:
-                cout << "Invalid input" << endl;
-                return;
-        }
-    } else {
-        cout << "Running simulation with user input values" << endl;
-        cout << "Enter number of nodes: " << endl << ">>";
-        int numberOfNodes;
-        cin >> numberOfNodes;
-        int signalStrength;
-        cout << "Enter the signal strength for the nodes: " << endl << ">>";
-        cin >> signalStrength;
-        cout << "------------- How would you like to position the nodes? -------------" << endl;
-        cout << "[0]: Choose the position of each node (not recommended if there are many nodes!)" << endl;
-        cout << "[1]: Scatter the nodes randomly" << endl;
-        int positionChoice;
-        cin >> positionChoice;
-
-        vector<tuple<int, int, int>> nodePositions;
-        switch (positionChoice) {
-            case 0:
-                for(int i=0; i<numberOfNodes; i++) {
-                    int x, y, z;
-                    cout << "Enter position for Node " << i+1 << "(x, y, z): ";
-                    cin >> x >> y >> z;
-                    nodePositions.emplace_back(x, y, z);
-                }
-                cout << "Loading custom simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                simulate(nodePositions, numberOfNodes/4, signalStrength);
-                break;
-            case 1:
-                cout << "Loading custom scattered nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                runWithScatteredNodes(numberOfNodes, numberOfNodes/4, signalStrength);
-                break;
-            default:
-                cout << "Invalid choice. Retry with correct option" << endl;
-                break;
-        }
-    }
-} */
-//todo old code above here
 
 struct Simulation {
     int id;
@@ -465,21 +340,23 @@ struct Simulation {
 };
 
 std::vector<Simulation> simulations = {
-        {0, 10, 5000, "Random"},
-        {1, 50, 3000, "Random"},
-        {2, 100, 1000, "Random"},
-        {3, 200, 400, "Random"},
-        {4, 600, 100, "Random"},
-        {5, 750, 150, "Random"}
+        {0, 10, 5000, "Nodes may not connected"},
+        {1, 30, 7000, "Fast simulation"},
+        {2, 50, 6000, "Fast simulation"},
+        {3, 100, 2000, "Medium simulation"},
+        {4, 200, 400, "Expect to wait some seconds"},
+        {5, 600, 70, "May take very long to simulate"},
+        {6, 750, 70, "May take very long to simulate"},
+        {7, 30, 50, "Good for visualizing in the terminal"},
+        {8, 100, 20, "Good for visualizing in the terminal"}
 };
 
 void printSimulationOptions() {
     cout << "------------- Simulation options -------------" << endl;
-    cout << "\tNodes\tSignal Strength\tPosition" << endl;
+    cout << "\tNodes\tSignal Strength\tInfo" << endl;
     for (auto &simulation : simulations) {
         printSimulationPreset(simulation.id, simulation.nodes, simulation.signalStrength, simulation.description);
     }
-    cout << "WARNING: Simulation option 4 and 5 may take a long time to complete!" << endl;
 }
 
 void runSimulation(int simulationId) {
@@ -491,33 +368,54 @@ void runSimulation(int simulationId) {
 void startSimulationConsole() {
     std::cout << "------------- Wireless Mesh simulation -------------" << std::endl << std::endl;
     std::cout << "This program simulates a Wireless Mesh network." << std::endl;
-    std::cout << "Do you want to run the simulation with predefined values? (y/n)" << std::endl;
-    std::cout << ">>";
     std::string answer;
-    std::cin >> answer;
+    do {
+        std::cout << "Do you want to run the simulation with predefined values? (y/n)" << std::endl;
+        std::cout << ">>";
+        std::cin >> answer;
+    } while (answer != "y" && answer != "n");
+
     if (answer == "y") {
         printSimulationOptions();
-        std::cout << ">>";
         int simulation;
-        std::cin >> simulation;
-        if (simulation >= 0 && simulation < simulations.size()) {
-            runSimulation(simulation);
-        } else {
-            std::cout << "Invalid input" << std::endl;
-        }
+        do {
+            std::cout << ">>";
+            std::cin >> simulation;
+            if (simulation < 0 || simulation >= simulations.size()) {
+                std::cout << "Invalid input. Please try again." << std::endl;
+            }
+        } while (simulation < 0 || simulation >= simulations.size());
+        runSimulation(simulation);
     } else {
         cout << "Running simulation with user input values" << endl;
-        cout << "Enter number of nodes: " << endl << ">>";
         int numberOfNodes;
-        cin >> numberOfNodes;
-        int signalStrength;
-        cout << "Enter the signal strength for the nodes: " << endl << ">>";
-        cin >> signalStrength;
-        cout << "------------- How would you like to position the nodes? -------------" << endl;
-        cout << "[0]: Choose the position of each node (not recommended if there are many nodes!)" << endl;
-        cout << "[1]: Scatter the nodes randomly" << endl;
+        do {
+            cout << "Enter number of nodes: " << endl << ">>";
+            cin >> numberOfNodes;
+            if (numberOfNodes <= 0) {
+                cout << "Number of nodes must be greater than 0. Please try again." << endl;
+            }
+        } while (numberOfNodes <= 0);
+
+        double signalStrength;
+        do {
+            cout << "Enter the signal strength for the nodes: " << endl << ">>";
+            cin >> signalStrength;
+            if (signalStrength < 0) {
+                cout << "Signal strength cannot be negative. Please try again." << endl;
+            }
+        } while (signalStrength < 0);
+
         int positionChoice;
-        cin >> positionChoice;
+        do {
+            cout << "------------- How would you like to position the nodes? -------------" << endl;
+            cout << "[0]: Choose the position of each node (not recommended if there are many nodes!)" << endl;
+            cout << "[1]: Scatter the nodes randomly" << endl << ">>";
+            cin >> positionChoice;
+            if (positionChoice < 0 || positionChoice > 1) {
+                cout << "Invalid choice. Please select 0 or 1." << endl;
+            }
+        } while (positionChoice < 0 || positionChoice > 1);
 
         vector<tuple<int, int, int>> nodePositions;
         switch (positionChoice) {
@@ -525,18 +423,19 @@ void startSimulationConsole() {
                 for(int i=0; i<numberOfNodes; i++) {
                     int x, y, z;
                     cout << "Enter position for Node " << i+1 << "(x, y, z): ";
-                    cin >> x >> y >> z;
+                    while (!(cin >> x >> y >> z) || x < 0 || y < 0 || z < 0 || x > width-1 || y > height-1) {
+                        cout << "Invalid position. Please enter valid x, y, and z coordinates: ";
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    }
                     nodePositions.emplace_back(x, y, z);
                 }
                 cout << "Loading custom simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                simulate(nodePositions, numberOfNodes/4, signalStrength);
+                simulate(nodePositions, 70, signalStrength);
                 break;
             case 1:
                 cout << "Loading custom scattered nodes simulation with " << numberOfNodes << " nodes and " << signalStrength << " signal strength." << endl;
-                runWithScatteredNodes(numberOfNodes, numberOfNodes/4, signalStrength);
-                break;
-            default:
-                cout << "Invalid choice. Retry with correct option" << endl;
+                runWithScatteredNodes(numberOfNodes, 70, signalStrength);
                 break;
         }
     }
@@ -550,11 +449,17 @@ int main() {
     width = terminalSize.first;
     height = terminalSize.second;
 
-    cout << "Choose the type of topography: \n[0]: Default City \n[1]: Default Mountain \n[2]: Custom City \n[3]: Custom Mountain \n[4]: Import from file \n[5]: Console-sized City \n[6]: Console-sized Mountain" << endl << ">>";
     int topographyChoice;
-    cin >> topographyChoice;
+    do {
+        cout << "Choose the type of topography: \n[0]: Default City \n[1]: Default Mountain \n[2]: Custom City \n[3]: Custom Mountain \n[4]: Import from file \n[5]: Console-sized City \n[6]: Console-sized Mountain" << endl << ">>";
+        cin >> topographyChoice;
+        if (topographyChoice < 0 || topographyChoice > 6) {
+            cout << "Invalid choice. Please enter a number between 0 and 6." << endl;
+        }
+    } while (topographyChoice < 0 || topographyChoice > 6);
+
     string filename;
-    int customWidth, customHeight;
+    int customWidth = -1, customHeight = -1;
 
     switch(topographyChoice) {
         case 0:
@@ -566,20 +471,24 @@ int main() {
             cout << "You chose default Mountain topography." << endl;
             break;
         case 2:
-            cout << "Enter the dimensions for the custom city (width height): " << endl << ">>";
-            cin >> customWidth >> customHeight;
-            // Assure positive dimensions
-            customWidth = abs(customWidth);
-            customHeight = abs(customHeight);
+            while (customWidth <= 0 || customHeight <= 0) {
+                cout << "Enter the dimensions for the custom topography (positive width and height): " << endl << ">>";
+                cin >> customWidth >> customHeight;
+                if (customWidth <= 0 || customHeight <= 0) {
+                    cout << "Dimensions should be positive. Please enter again." << endl;
+                }
+            }
             heightData = topography.generateCityElevation(customHeight, customWidth, 20, 80, 1000, 15, 100);
             cout << "You chose custom City topography." << endl;
             break;
         case 3:
-            cout << "Enter the dimensions for the custom mountain (width height): " << endl << ">>";
-            cin >> customWidth >> customHeight;
-            // Assure positive dimensions
-            customWidth = abs(customWidth);
-            customHeight = abs(customHeight);
+            while (customWidth <= 0 || customHeight <= 0) {
+                cout << "Enter the dimensions for the custom topography (positive width and height): " << endl << ">>";
+                cin >> customWidth >> customHeight;
+                if (customWidth <= 0 || customHeight <= 0) {
+                    cout << "Dimensions should be positive. Please enter again." << endl;
+                }
+            };
             heightData = topography.generateMountainElevation(customHeight, customWidth, 0, 60);
             cout << "You chose custom Mountain topography." << endl;
             break;
