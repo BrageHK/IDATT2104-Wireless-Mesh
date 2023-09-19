@@ -140,6 +140,7 @@ int Node::getX() const {
 }
 
 void Node::sendMessage(int receiverId, std::string basicString, std::vector<std::pair<Node*, Node*>>& connectedDrones) {
+
     if(routingTable.find(receiverId) == routingTable.end()) {
         std::cout << "Node " << id << " does not have a route to node " << receiverId << std::endl;
         return;
