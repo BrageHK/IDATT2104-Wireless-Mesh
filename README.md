@@ -1,5 +1,7 @@
 # IDATT2104-Wireless-Mesh
 
+Grade: A
+
 # Table of contents
 
 - [Overview](#overview)
